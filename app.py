@@ -900,6 +900,37 @@ def render_ai_answer(answer: str) -> None:
             st.write(value)
 
 
+def carousel_to_script(carousel: dict) -> str:
+    lines = [
+        f"TITULO: {carousel.get('title', 'Carrusel DOMO')}",
+        f"OBJETIVO: {carousel.get('objective', '')}",
+        "",
+        "SLIDES",
+    ]
+    for slide in carousel.get("slides", []):
+        lines.extend(
+            [
+                "",
+                f"IMAGEN {slide.get('number', '')}",
+                f"FRASE: {slide.get('text', '')}",
+                f"VISUAL: {slide.get('visual', '')}",
+                f"TEXTO PEQUENO: {slide.get('microcopy', '')}",
+                f"NOTA: {slide.get('note', '')}",
+            ]
+        )
+    lines.extend(
+        [
+            "",
+            "CAPTION",
+            carousel.get("caption", ""),
+            "",
+            "CTA",
+            carousel.get("cta", ""),
+        ]
+    )
+    return "\n".join(lines)
+
+
 def render_assistant(posts: pd.DataFrame, assistant_notes: pd.DataFrame) -> None:
     st.subheader("Asistente DOMO")
     st.write("Pregúntale qué publicar, qué repetir, qué dejar de hacer o cómo convertir una idea en contenido que venda.")
@@ -1081,6 +1112,15 @@ def render_carousels(posts: pd.DataFrame, inspirations: pd.DataFrame, carousels:
         st.markdown(f"**Objetivo:** {carousel.get('objective', objective)}")
         for slide in carousel.get("slides", []):
             render_slide_card(slide)
+        script = carousel_to_script(carousel)
+        st.markdown("#### Guion completo")
+        st.text_area("Listo para copiar", script, height=280)
+        st.download_button(
+            "Descargar guion TXT",
+            data=script.encode("utf-8"),
+            file_name="domo_carrusel_guion.txt",
+            mime="text/plain",
+        )
         st.markdown("#### Caption")
         st.write(carousel.get("caption", ""))
         st.markdown("#### CTA")
@@ -1099,6 +1139,16 @@ def render_carousels(posts: pd.DataFrame, inspirations: pd.DataFrame, carousels:
                     slides = []
                 for slide in slides:
                     render_slide_card(slide)
+                script = carousel_to_script(
+                    {
+                        "title": row["title"],
+                        "objective": row["objective"],
+                        "slides": slides,
+                        "caption": row.get("caption", ""),
+                        "cta": row.get("cta", ""),
+                    }
+                )
+                st.text_area("Guion", script, height=220, key=f"script_{row['id']}")
                 st.markdown(f"**Caption:** {row.get('caption', '')}")
                 st.markdown(f"**CTA:** {row.get('cta', '')}")
 
