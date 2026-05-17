@@ -91,12 +91,30 @@ def answer_as_domo_assistant(question: str, posts: pd.DataFrame) -> str:
     system_prompt = (
         load_system_prompt()
         + "\nActua como asistente privado de redes de DOMO. "
-        + "Se directo, ambicioso y estrategico. No prometas fama garantizada; traduce la ambicion en acciones medibles."
+        + "Se directo, ambicioso y estrategico. No prometas fama garantizada; traduce la ambicion en acciones medibles. "
+        + "Si el usuario pide carruseles, frases para carrusel, slides o imagenes de carrusel, devuelve JSON con title, objective, caption, cta y slides. "
+        + "Cada slide debe incluir number, text, visual, microcopy y note. El campo text es la frase exacta que va sobre la imagen. "
+        + "Entrega 6 a 8 slides por carrusel. No devuelvas solo conceptos generales."
     )
     payload = {
         "question": question,
         "metrics": compact_metrics(posts),
         "answer_style": "claro, accionable, en español, con pasos concretos",
+        "carousel_json_shape": {
+            "title": "titulo del carrusel",
+            "objective": "shares | saves | comentarios | leads | autoridad",
+            "caption": "caption sugerido",
+            "cta": "cta",
+            "slides": [
+                {
+                    "number": 1,
+                    "text": "frase exacta grande para la imagen",
+                    "visual": "direccion visual de la imagen",
+                    "microcopy": "texto pequeno opcional",
+                    "note": "intencion estrategica del slide",
+                }
+            ],
+        },
     }
     ai_answer = ai_complete(system_prompt, payload)
     if ai_answer:
