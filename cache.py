@@ -1,22 +1,122 @@
 from __future__ import annotations
 
+import os
 import sqlite3
 from pathlib import Path
-from typing import Iterable
+from typing import Any, Iterable
 
 
 DATA_DIR = Path("data.nosync")
 DB_PATH = DATA_DIR / "domo_content_lab.sqlite"
+SUPABASE_PROJECT_ID = "gccbondkipsqgakduokf"
 
 
-def get_connection() -> sqlite3.Connection:
+POST_BASE_COLUMNS = [
+    "date",
+    "platform",
+    "title",
+    "pillar",
+    "format",
+    "weekday",
+    "hour",
+    "reach",
+    "likes",
+    "comments",
+    "quality_comments",
+    "shares",
+    "saves",
+    "profile_visits",
+    "website_clicks",
+]
+POST_RATE_COLUMNS = [
+    "engagement_rate",
+    "share_rate",
+    "save_rate",
+    "quality_comment_rate",
+    "profile_visit_rate",
+]
+POST_COLUMNS = [*POST_BASE_COLUMNS, *POST_RATE_COLUMNS]
+
+
+class SupabaseConnection:
+    def __init__(self, client: Any) -> None:
+        self.client = client
+
+    def close(self) -> None:
+        return None
+
+
+def get_secret(name: str, default: str = "") -> str:
+    try:
+        import streamlit as st
+
+        value = st.secrets.get(name, "")
+    except Exception:
+        value = ""
+    return str(value or os.getenv(name, default) or "").strip()
+
+
+def normalize_supabase_url(value: str) -> str:
+    value = value.strip()
+    if not value:
+        project_id = get_secret("SUPABASE_PROJECT_ID", SUPABASE_PROJECT_ID)
+        return f"https://{project_id}.supabase.co" if project_id else ""
+    if value.startswith("http://") or value.startswith("https://"):
+        return value.rstrip("/")
+    if "." not in value:
+        return f"https://{value}.supabase.co"
+    return f"https://{value}".rstrip("/")
+
+
+def get_supabase_client() -> Any | None:
+    url = normalize_supabase_url(get_secret("SUPABASE_URL", ""))
+    key = (
+        get_secret("SUPABASE_SERVICE_ROLE_KEY", "")
+        or get_secret("SUPABASE_KEY", "")
+        or get_secret("SUPABASE_ANON_KEY", "")
+    )
+    if not url or not key:
+        return None
+    try:
+        from supabase import create_client
+
+        return create_client(url, key)
+    except Exception:
+        return None
+
+
+def supabase_schema_ready(client: Any) -> bool:
+    try:
+        client.table("posts").select("id").limit(1).execute()
+        return True
+    except Exception:
+        return False
+
+
+def get_connection() -> sqlite3.Connection | SupabaseConnection:
+    client = get_supabase_client()
+    if client is not None and supabase_schema_ready(client):
+        return SupabaseConnection(client)
+
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     return sqlite3.connect(DB_PATH)
 
 
+def is_supabase(conn: sqlite3.Connection | SupabaseConnection) -> bool:
+    return isinstance(conn, SupabaseConnection)
+
+
+def get_database_mode() -> str:
+    conn = get_connection()
+    mode = "Supabase" if is_supabase(conn) else "SQLite local"
+    conn.close()
+    return mode
+
+
 def initialize_database() -> None:
     conn = get_connection()
-    create_tables(conn)
+    if not is_supabase(conn):
+        create_tables(conn)
     seed_if_empty(conn)
     conn.close()
 
@@ -166,178 +266,204 @@ def create_tables(conn: sqlite3.Connection) -> None:
     conn.commit()
 
 
-def table_count(conn: sqlite3.Connection, table: str) -> int:
+def table_count(conn: sqlite3.Connection | SupabaseConnection, table: str) -> int:
+    if is_supabase(conn):
+        result = conn.client.table(table).select("id", count="exact").limit(1).execute()
+        if result.count is not None:
+            return int(result.count)
+        return len(result.data or [])
     row = conn.execute(f"SELECT COUNT(*) FROM {table}").fetchone()
     return int(row[0])
 
 
-def seed_if_empty(conn: sqlite3.Connection) -> None:
+def insert_rows(conn: sqlite3.Connection | SupabaseConnection, table: str, rows: Iterable[dict[str, Any]]) -> None:
+    payload = list(rows)
+    if not payload:
+        return
+    if is_supabase(conn):
+        conn.client.table(table).insert(payload).execute()
+        return
+
+    columns = list(payload[0].keys())
+    placeholders = ", ".join(["?"] * len(columns))
+    column_sql = ", ".join(columns)
+    values = [tuple(row.get(column) for column in columns) for row in payload]
+    conn.executemany(f"INSERT INTO {table} ({column_sql}) VALUES ({placeholders})", values)
+    conn.commit()
+
+
+def enrich_post_row(row: tuple) -> dict[str, Any]:
+    data = dict(zip(POST_BASE_COLUMNS, row))
+    reach = max(float(data["reach"]), 1.0)
+    likes = float(data["likes"])
+    comments = float(data["comments"])
+    shares = float(data["shares"])
+    saves = float(data["saves"])
+    quality_comments = float(data["quality_comments"])
+    profile_visits = float(data["profile_visits"])
+    data.update(
+        {
+            "engagement_rate": round(((likes + comments + shares + saves) / reach) * 100, 2),
+            "share_rate": round((shares / reach) * 100, 2),
+            "save_rate": round((saves / reach) * 100, 2),
+            "quality_comment_rate": round((quality_comments / reach) * 100, 2),
+            "profile_visit_rate": round((profile_visits / reach) * 100, 2),
+        }
+    )
+    return data
+
+
+def seed_if_empty(conn: sqlite3.Connection | SupabaseConnection) -> None:
     if table_count(conn, "posts") > 0:
         return
 
     posts = [
-        ("2026-04-20", "Instagram", "El rótulo popular también piensa", "DOMO ve el mundo", "Reel", "Lunes", 19, 14500, 980, 52, 18, 41, 63, 188, 12),
-        ("2026-04-22", "Instagram", "Antes de diseñar, miro la calle", "Así pienso yo", "Carrusel", "Miércoles", 12, 9800, 710, 44, 21, 30, 94, 122, 9),
-        ("2026-04-25", "Instagram", "Tres formas de leer una marca sin brief", "Creatividad para todos", "Carrusel", "Sábado", 10, 7600, 530, 21, 11, 18, 89, 80, 5),
-        ("2026-04-29", "Instagram", "Cuenca no es postal, es sistema visual", "DOMO ve el mundo", "Reel", "Miércoles", 20, 18200, 1340, 76, 34, 69, 77, 241, 18),
-        ("2026-05-02", "Instagram", "Por qué una foto publicitaria necesita tensión", "Así pienso yo", "Reel", "Sábado", 18, 12100, 900, 38, 17, 27, 44, 151, 10),
+        ("2026-04-20", "Instagram", "El rotulo popular tambien piensa", "DOMO ve el mundo", "Reel", "Lunes", 19, 14500, 980, 52, 18, 41, 63, 188, 12),
+        ("2026-04-22", "Instagram", "Antes de disenar, miro la calle", "Asi pienso yo", "Carrusel", "Miercoles", 12, 9800, 710, 44, 21, 30, 94, 122, 9),
+        ("2026-04-25", "Instagram", "Tres formas de leer una marca sin brief", "Creatividad para todos", "Carrusel", "Sabado", 10, 7600, 530, 21, 11, 18, 89, 80, 5),
+        ("2026-04-29", "Instagram", "Cuenca no es postal, es sistema visual", "DOMO ve el mundo", "Reel", "Miercoles", 20, 18200, 1340, 76, 34, 69, 77, 241, 18),
+        ("2026-05-02", "Instagram", "Por que una foto publicitaria necesita tension", "Asi pienso yo", "Reel", "Sabado", 18, 12100, 900, 38, 17, 27, 44, 151, 10),
         ("2026-05-05", "Instagram", "Checklist visual para saber si una idea aguanta", "Creatividad para todos", "Carrusel", "Martes", 11, 8300, 640, 29, 16, 23, 121, 104, 7),
-        ("2026-05-08", "Instagram", "La gráfica de tienda como escuela de dirección de arte", "DOMO ve el mundo", "Reel", "Viernes", 19, 16400, 1190, 61, 29, 57, 82, 211, 15),
+        ("2026-05-08", "Instagram", "La grafica de tienda como escuela de direccion de arte", "DOMO ve el mundo", "Reel", "Viernes", 19, 16400, 1190, 61, 29, 57, 82, 211, 15),
         ("2026-05-10", "LinkedIn", "La cultura visual local no es adorno, es estrategia", "DOMO ve el mundo", "Post texto", "Domingo", 9, 4100, 154, 19, 14, 11, 22, 48, 6),
-        ("2026-05-12", "LinkedIn", "Cómo evalúo una idea antes de producirla", "Así pienso yo", "Documento", "Martes", 8, 5200, 230, 27, 20, 16, 44, 72, 11),
-        ("2026-05-14", "Instagram", "La diferencia entre verse bonito y tener criterio", "Así pienso yo", "Reel", "Jueves", 20, 19300, 1510, 93, 39, 74, 68, 276, 19),
+        ("2026-05-12", "LinkedIn", "Como evaluo una idea antes de producirla", "Asi pienso yo", "Documento", "Martes", 8, 5200, 230, 27, 20, 16, 44, 72, 11),
+        ("2026-05-14", "Instagram", "La diferencia entre verse bonito y tener criterio", "Asi pienso yo", "Reel", "Jueves", 20, 19300, 1510, 93, 39, 74, 68, 276, 19),
     ]
     insert_posts(conn, posts)
 
-    daily = [
-        ("2026-05-08", 16400, 211, 15, 82),
-        ("2026-05-09", 4200, 49, 4, 18),
-        ("2026-05-10", 4100, 48, 6, 23),
-        ("2026-05-11", 3900, 41, 5, 16),
-        ("2026-05-12", 5200, 72, 11, 34),
-        ("2026-05-13", 4500, 53, 8, 21),
-        ("2026-05-14", 19300, 276, 19, 105),
-    ]
-    conn.executemany(
-        "INSERT INTO daily_metrics (date, reach, profile_visits, website_clicks, followers_delta) VALUES (?, ?, ?, ?, ?)",
-        daily,
+    insert_rows(
+        conn,
+        "daily_metrics",
+        [
+            {"date": "2026-05-08", "reach": 16400, "profile_visits": 211, "website_clicks": 15, "followers_delta": 82},
+            {"date": "2026-05-09", "reach": 4200, "profile_visits": 49, "website_clicks": 4, "followers_delta": 18},
+            {"date": "2026-05-10", "reach": 4100, "profile_visits": 48, "website_clicks": 6, "followers_delta": 23},
+            {"date": "2026-05-11", "reach": 3900, "profile_visits": 41, "website_clicks": 5, "followers_delta": 16},
+            {"date": "2026-05-12", "reach": 5200, "profile_visits": 72, "website_clicks": 11, "followers_delta": 34},
+            {"date": "2026-05-13", "reach": 4500, "profile_visits": 53, "website_clicks": 8, "followers_delta": 21},
+            {"date": "2026-05-14", "reach": 19300, "profile_visits": 276, "website_clicks": 19, "followers_delta": 105},
+        ],
     )
 
-    profile = [
-        ("2026-05-14", "Instagram", 18420, 276, 19, 5, 1.43),
-        ("2026-05-14", "LinkedIn", 2120, 72, 11, 3, 1.38),
-    ]
-    conn.executemany(
-        """
-        INSERT INTO profile_metrics
-        (date, platform, followers, profile_visits, website_clicks, dm_leads, profile_visit_rate)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-        """,
-        profile,
+    insert_rows(
+        conn,
+        "profile_metrics",
+        [
+            {"date": "2026-05-14", "platform": "Instagram", "followers": 18420, "profile_visits": 276, "website_clicks": 19, "dm_leads": 5, "profile_visit_rate": 1.43},
+            {"date": "2026-05-14", "platform": "LinkedIn", "followers": 2120, "profile_visits": 72, "website_clicks": 11, "dm_leads": 3, "profile_visit_rate": 1.38},
+        ],
     )
 
-    monetization = [
-        ("2026-05-14", "Instagram Reels", 4, 2, 1, 1850),
-        ("2026-05-14", "Instagram Carruseles", 2, 1, 0, 900),
-        ("2026-05-14", "LinkedIn", 1, 3, 2, 3200),
-    ]
-    conn.executemany(
-        """
-        INSERT INTO monetization_signals
-        (date, source, workshop_leads, consulting_leads, collab_leads, estimated_value_usd)
-        VALUES (?, ?, ?, ?, ?, ?)
-        """,
-        monetization,
+    insert_rows(
+        conn,
+        "monetization_signals",
+        [
+            {"date": "2026-05-14", "source": "Instagram Reels", "workshop_leads": 4, "consulting_leads": 2, "collab_leads": 1, "estimated_value_usd": 1850},
+            {"date": "2026-05-14", "source": "Instagram Carruseles", "workshop_leads": 2, "consulting_leads": 1, "collab_leads": 0, "estimated_value_usd": 900},
+            {"date": "2026-05-14", "source": "LinkedIn", "workshop_leads": 1, "consulting_leads": 3, "collab_leads": 2, "estimated_value_usd": 3200},
+        ],
     )
 
-    ideas = [
-        (
-            "DOMO ve el mundo",
-            "Reel",
-            "La esquina que enseña más dirección de arte que una moodboard",
-            "Zoom rápido a un rótulo popular y frase: 'Esto no es decoración. Es estrategia visual.'",
-            "La audiencia comparte porque reconoce su ciudad; guarda porque aprende a mirar sistemas visuales.",
-            "Comenta 'calle' si quieres que analice una gráfica de tu barrio.",
-            "Convierte cultura local en criterio profesional internacional.",
-            "Alta",
-            "Publicar como mini ensayo con 3 aprendizajes para marcas que quieren identidad real.",
-        )
-    ]
-    conn.executemany(
-        """
-        INSERT INTO content_ideas
-        (pillar, format, title, hook, share_save_mechanism, cta, strategic_reason, priority, linkedin_adaptation)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """,
-        ideas,
+    insert_rows(
+        conn,
+        "content_ideas",
+        [
+            {
+                "pillar": "DOMO ve el mundo",
+                "format": "Reel",
+                "title": "La esquina que ensena mas direccion de arte que una moodboard",
+                "hook": "Zoom rapido a un rotulo popular y frase: Esto no es decoracion. Es estrategia visual.",
+                "share_save_mechanism": "La audiencia comparte porque reconoce su ciudad; guarda porque aprende a mirar sistemas visuales.",
+                "cta": "Comenta calle si quieres que analice una grafica de tu barrio.",
+                "strategic_reason": "Convierte cultura local en criterio profesional internacional.",
+                "priority": "Alta",
+                "linkedin_adaptation": "Publicar como mini ensayo con 3 aprendizajes para marcas que quieren identidad real.",
+            }
+        ],
     )
-    conn.commit()
 
 
-def insert_posts(conn: sqlite3.Connection, rows: Iterable[tuple]) -> None:
-    enriched = []
-    for row in rows:
-        (
-            date,
-            platform,
-            title,
-            pillar,
-            format_name,
-            weekday,
-            hour,
-            reach,
-            likes,
-            comments,
-            quality_comments,
-            shares,
-            saves,
-            profile_visits,
-            website_clicks,
-        ) = row
-        engagement_rate = round(((likes + comments + shares + saves) / reach) * 100, 2)
-        share_rate = round((shares / reach) * 100, 2)
-        save_rate = round((saves / reach) * 100, 2)
-        quality_comment_rate = round((quality_comments / reach) * 100, 2)
-        profile_visit_rate = round((profile_visits / reach) * 100, 2)
-        enriched.append(
-            (
-                *row,
-                engagement_rate,
-                share_rate,
-                save_rate,
-                quality_comment_rate,
-                profile_visit_rate,
-            )
-        )
-    conn.executemany(
-        """
-        INSERT INTO posts
-        (date, platform, title, pillar, format, weekday, hour, reach, likes, comments,
-        quality_comments, shares, saves, profile_visits, website_clicks, engagement_rate,
-        share_rate, save_rate, quality_comment_rate, profile_visit_rate)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """,
-        enriched,
-    )
-    conn.commit()
+def insert_posts(conn: sqlite3.Connection | SupabaseConnection, rows: Iterable[tuple]) -> None:
+    insert_rows(conn, "posts", [enrich_post_row(row) for row in rows])
 
 
-def read_sql(conn: sqlite3.Connection, query: str):
+def read_sql(conn: sqlite3.Connection | SupabaseConnection, query: str):
     import pandas as pd
 
+    if is_supabase(conn):
+        raise ValueError("read_sql solo se usa con SQLite.")
     return pd.read_sql_query(query, conn)
 
 
-def get_posts(conn: sqlite3.Connection):
-    return read_sql(conn, "SELECT * FROM posts ORDER BY date DESC")
+def get_table(
+    conn: sqlite3.Connection | SupabaseConnection,
+    table: str,
+    order_by: str | None = None,
+    descending: bool = True,
+    columns: list[str] | None = None,
+):
+    import pandas as pd
+
+    if is_supabase(conn):
+        select_columns = ",".join(columns) if columns else "*"
+        query = conn.client.table(table).select(select_columns)
+        if order_by:
+            query = query.order(order_by, desc=descending)
+        data = query.execute().data or []
+        frame = pd.DataFrame(data)
+        if columns:
+            for column in columns:
+                if column not in frame.columns:
+                    frame[column] = None
+            frame = frame[columns]
+        return frame
+
+    select_sql = ", ".join(columns) if columns else "*"
+    order_sql = ""
+    if order_by:
+        direction = "DESC" if descending else "ASC"
+        order_sql = f" ORDER BY {order_by} {direction}"
+    return read_sql(conn, f"SELECT {select_sql} FROM {table}{order_sql}")
 
 
-def get_daily_metrics(conn: sqlite3.Connection):
-    return read_sql(conn, "SELECT * FROM daily_metrics ORDER BY date")
+def get_posts(conn: sqlite3.Connection | SupabaseConnection):
+    return get_table(conn, "posts", order_by="date", descending=True)
 
 
-def get_profile_metrics(conn: sqlite3.Connection):
-    return read_sql(conn, "SELECT * FROM profile_metrics ORDER BY date DESC")
+def get_daily_metrics(conn: sqlite3.Connection | SupabaseConnection):
+    return get_table(conn, "daily_metrics", order_by="date", descending=False)
 
 
-def get_monetization_signals(conn: sqlite3.Connection):
-    return read_sql(conn, "SELECT * FROM monetization_signals ORDER BY date DESC")
+def get_profile_metrics(conn: sqlite3.Connection | SupabaseConnection):
+    return get_table(conn, "profile_metrics", order_by="date", descending=True)
 
 
-def get_content_ideas(conn: sqlite3.Connection):
-    return read_sql(
+def get_monetization_signals(conn: sqlite3.Connection | SupabaseConnection):
+    return get_table(conn, "monetization_signals", order_by="date", descending=True)
+
+
+def get_content_ideas(conn: sqlite3.Connection | SupabaseConnection):
+    return get_table(
         conn,
-        """
-        SELECT pillar, format, title, hook, share_save_mechanism, cta,
-        strategic_reason, priority, linkedin_adaptation
-        FROM content_ideas
-        ORDER BY created_at DESC
-        """,
+        "content_ideas",
+        order_by="created_at",
+        descending=True,
+        columns=[
+            "pillar",
+            "format",
+            "title",
+            "hook",
+            "share_save_mechanism",
+            "cta",
+            "strategic_reason",
+            "priority",
+            "linkedin_adaptation",
+        ],
     )
 
 
 def add_screenshot(
-    conn: sqlite3.Connection,
+    conn: sqlite3.Connection | SupabaseConnection,
     date: str,
     platform: str,
     content_title: str,
@@ -345,23 +471,28 @@ def add_screenshot(
     notes: str,
     ai_reading: str,
 ) -> None:
-    conn.execute(
-        """
-        INSERT INTO screenshots
-        (date, platform, content_title, image_path, notes, ai_reading)
-        VALUES (?, ?, ?, ?, ?, ?)
-        """,
-        (date, platform, content_title, image_path, notes, ai_reading),
+    insert_rows(
+        conn,
+        "screenshots",
+        [
+            {
+                "date": date,
+                "platform": platform,
+                "content_title": content_title,
+                "image_path": image_path,
+                "notes": notes,
+                "ai_reading": ai_reading,
+            }
+        ],
     )
-    conn.commit()
 
 
-def get_screenshots(conn: sqlite3.Connection):
-    return read_sql(conn, "SELECT * FROM screenshots ORDER BY created_at DESC")
+def get_screenshots(conn: sqlite3.Connection | SupabaseConnection):
+    return get_table(conn, "screenshots", order_by="created_at", descending=True)
 
 
 def add_manual_post(
-    conn: sqlite3.Connection,
+    conn: sqlite3.Connection | SupabaseConnection,
     date: str,
     platform: str,
     title: str,
@@ -403,64 +534,61 @@ def add_manual_post(
 
 
 def add_inspiration(
-    conn: sqlite3.Connection,
+    conn: sqlite3.Connection | SupabaseConnection,
     url: str,
     title: str,
     source_notes: str,
     domo_angle: str,
     suggested_content: str,
 ) -> None:
-    conn.execute(
-        """
-        INSERT INTO inspirations
-        (url, title, source_notes, domo_angle, suggested_content)
-        VALUES (?, ?, ?, ?, ?)
-        """,
-        (url, title, source_notes, domo_angle, suggested_content),
+    insert_rows(
+        conn,
+        "inspirations",
+        [
+            {
+                "url": url,
+                "title": title,
+                "source_notes": source_notes,
+                "domo_angle": domo_angle,
+                "suggested_content": suggested_content,
+            }
+        ],
     )
-    conn.commit()
 
 
-def get_inspirations(conn: sqlite3.Connection):
-    return read_sql(conn, "SELECT * FROM inspirations ORDER BY created_at DESC")
+def get_inspirations(conn: sqlite3.Connection | SupabaseConnection):
+    return get_table(conn, "inspirations", order_by="created_at", descending=True)
 
 
-def add_assistant_note(conn: sqlite3.Connection, question: str, answer: str) -> None:
-    conn.execute(
-        "INSERT INTO assistant_notes (question, answer) VALUES (?, ?)",
-        (question, answer),
-    )
-    conn.commit()
+def add_assistant_note(conn: sqlite3.Connection | SupabaseConnection, question: str, answer: str) -> None:
+    insert_rows(conn, "assistant_notes", [{"question": question, "answer": answer}])
 
 
-def get_assistant_notes(conn: sqlite3.Connection):
-    return read_sql(conn, "SELECT * FROM assistant_notes ORDER BY created_at DESC")
+def get_assistant_notes(conn: sqlite3.Connection | SupabaseConnection):
+    return get_table(conn, "assistant_notes", order_by="created_at", descending=True)
 
 
 def add_trend_item(
-    conn: sqlite3.Connection,
+    conn: sqlite3.Connection | SupabaseConnection,
     query: str,
     title: str,
     url: str,
     source: str,
     domo_reading: str,
 ) -> None:
-    conn.execute(
-        """
-        INSERT INTO trend_items (query, title, url, source, domo_reading)
-        VALUES (?, ?, ?, ?, ?)
-        """,
-        (query, title, url, source, domo_reading),
+    insert_rows(
+        conn,
+        "trend_items",
+        [{"query": query, "title": title, "url": url, "source": source, "domo_reading": domo_reading}],
     )
-    conn.commit()
 
 
-def get_trend_items(conn: sqlite3.Connection):
-    return read_sql(conn, "SELECT * FROM trend_items ORDER BY created_at DESC")
+def get_trend_items(conn: sqlite3.Connection | SupabaseConnection):
+    return get_table(conn, "trend_items", order_by="created_at", descending=True)
 
 
 def add_collab_target(
-    conn: sqlite3.Connection,
+    conn: sqlite3.Connection | SupabaseConnection,
     name: str,
     category: str,
     why_fit: str,
@@ -468,49 +596,50 @@ def add_collab_target(
     priority: str,
     url: str = "",
 ) -> None:
-    conn.execute(
-        """
-        INSERT INTO collab_targets
-        (name, category, why_fit, approach, priority, url)
-        VALUES (?, ?, ?, ?, ?, ?)
-        """,
-        (name, category, why_fit, approach, priority, url),
+    insert_rows(
+        conn,
+        "collab_targets",
+        [
+            {
+                "name": name,
+                "category": category,
+                "why_fit": why_fit,
+                "approach": approach,
+                "priority": priority,
+                "url": url,
+            }
+        ],
     )
-    conn.commit()
 
 
-def get_collab_targets(conn: sqlite3.Connection):
-    return read_sql(conn, "SELECT * FROM collab_targets ORDER BY created_at DESC")
+def get_collab_targets(conn: sqlite3.Connection | SupabaseConnection):
+    return get_table(conn, "collab_targets", order_by="created_at", descending=True)
 
 
 def add_action_item(
-    conn: sqlite3.Connection,
+    conn: sqlite3.Connection | SupabaseConnection,
     title: str,
     area: str,
     reason: str,
     priority: str,
 ) -> None:
-    conn.execute(
-        """
-        INSERT INTO action_items (title, area, reason, priority)
-        VALUES (?, ?, ?, ?)
-        """,
-        (title, area, reason, priority),
-    )
-    conn.commit()
+    insert_rows(conn, "action_items", [{"title": title, "area": area, "reason": reason, "priority": priority}])
 
 
-def update_action_status(conn: sqlite3.Connection, item_id: int, status: str) -> None:
+def update_action_status(conn: sqlite3.Connection | SupabaseConnection, item_id: int, status: str) -> None:
+    if is_supabase(conn):
+        conn.client.table("action_items").update({"status": status}).eq("id", item_id).execute()
+        return
     conn.execute("UPDATE action_items SET status = ? WHERE id = ?", (status, item_id))
     conn.commit()
 
 
-def get_action_items(conn: sqlite3.Connection):
-    return read_sql(conn, "SELECT * FROM action_items ORDER BY created_at DESC")
+def get_action_items(conn: sqlite3.Connection | SupabaseConnection):
+    return get_table(conn, "action_items", order_by="created_at", descending=True)
 
 
 def add_carousel_draft(
-    conn: sqlite3.Connection,
+    conn: sqlite3.Connection | SupabaseConnection,
     source: str,
     title: str,
     objective: str,
@@ -518,16 +647,21 @@ def add_carousel_draft(
     caption: str,
     cta: str,
 ) -> None:
-    conn.execute(
-        """
-        INSERT INTO carousel_drafts
-        (source, title, objective, slides_json, caption, cta)
-        VALUES (?, ?, ?, ?, ?, ?)
-        """,
-        (source, title, objective, slides_json, caption, cta),
+    insert_rows(
+        conn,
+        "carousel_drafts",
+        [
+            {
+                "source": source,
+                "title": title,
+                "objective": objective,
+                "slides_json": slides_json,
+                "caption": caption,
+                "cta": cta,
+            }
+        ],
     )
-    conn.commit()
 
 
-def get_carousel_drafts(conn: sqlite3.Connection):
-    return read_sql(conn, "SELECT * FROM carousel_drafts ORDER BY created_at DESC")
+def get_carousel_drafts(conn: sqlite3.Connection | SupabaseConnection):
+    return get_table(conn, "carousel_drafts", order_by="created_at", descending=True)

@@ -30,6 +30,7 @@ from cache import (
     get_carousel_drafts,
     get_collab_targets,
     get_content_ideas,
+    get_database_mode,
     get_daily_metrics,
     get_inspirations,
     get_monetization_signals,
@@ -364,11 +365,14 @@ def render_header() -> None:
 
 
 def render_mobile_hint() -> None:
+    db_mode = get_database_mode()
     if os.getenv("STREAMLIT_SERVER_HEADLESS") or os.getenv("HOSTNAME"):
         st.sidebar.markdown("### App online")
         st.sidebar.write("Abierta desde Streamlit Cloud.")
         st.sidebar.markdown("### IA")
         st.sidebar.write("Key configurada. Si falla, revisa saldo/cuota en OpenAI." if has_ai_key() else "Sin API key: funciona con estrategia local. Con API key analiza mejor capturas y links.")
+        st.sidebar.markdown("### Memoria")
+        st.sidebar.write("Supabase conectado." if db_mode == "Supabase" else "SQLite local. Conecta Supabase para historial permanente.")
         return
 
     port = os.getenv("DOMO_STREAMLIT_PORT", "8501")
@@ -382,6 +386,8 @@ def render_mobile_hint() -> None:
     st.sidebar.caption("En iPhone o Android puedes usar 'Agregar a pantalla de inicio' para sentirlo como app.")
     st.sidebar.markdown("### IA")
     st.sidebar.write("Key configurada. Si falla, revisa saldo/cuota en OpenAI." if has_ai_key() else "Sin API key: funciona con estrategia local. Con API key analiza mejor capturas y links.")
+    st.sidebar.markdown("### Memoria")
+    st.sidebar.write("Supabase conectado." if db_mode == "Supabase" else "SQLite local. Conecta Supabase para historial permanente.")
 
 
 def render_command_center(posts: pd.DataFrame, action_items: pd.DataFrame) -> None:
@@ -1015,13 +1021,14 @@ def render_admin() -> None:
     st.write("Panel de salud del sistema. Aquí ves qué está listo y qué falta para operación 100%.")
     is_cloud = bool(os.getenv("HOSTNAME") or os.getenv("STREAMLIT_SERVER_HEADLESS"))
     instagram_ready = bool(get_secret("INSTAGRAM_ACCESS_TOKEN", "") and get_secret("INSTAGRAM_BUSINESS_ACCOUNT_ID", ""))
-    persistent_db = bool(get_secret("SUPABASE_URL", "") or get_secret("DATABASE_URL", ""))
+    database_mode = get_database_mode()
+    persistent_db = database_mode == "Supabase"
     checks = pd.DataFrame(
         [
             {"Área": "App online", "Estado": "Lista" if is_cloud else "Local", "Para qué sirve": "Abrir desde celular/oficina."},
             {"Área": "IA", "Estado": "Lista" if has_ai_key() else "Falta OPENAI_API_KEY", "Para qué sirve": "Ideas, carruseles, links, asistente."},
             {"Área": "Instagram API", "Estado": "Configurada" if instagram_ready else "Pendiente", "Para qué sirve": "Actualizar métricas casi automático."},
-            {"Área": "Datos persistentes", "Estado": "Lista" if persistent_db else "Temporal en Streamlit", "Para qué sirve": "No perder historial al reiniciar."},
+            {"Área": "Datos persistentes", "Estado": "Supabase conectado" if persistent_db else database_mode, "Para qué sirve": "No perder historial al reiniciar."},
             {"Área": "Capturas", "Estado": "Funciona manual", "Para qué sirve": "Subir screenshots y registrar métricas."},
             {"Área": "Carruseles", "Estado": "Listo", "Para qué sirve": "Generar frases por imagen y guion."},
         ]

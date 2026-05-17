@@ -19,6 +19,7 @@ La app no publica contenido, no envía mensajes y no automatiza interacción. So
   - Asistente
   - Monetización
 - Base local SQLite en `data.nosync/`
+- Memoria en Supabase opcional para uso desde celular/oficina sin perder historial
 - Cache privado fuera de git
 - Gráficos con Plotly
 - Generador de ideas DOMO con IA si hay API key
@@ -75,6 +76,12 @@ La primera vez, el proyecto crea datos de muestra en:
 
 ```text
 data.nosync/domo_content_lab.sqlite
+```
+
+Para que el historial quede permanente en la nube, conecta Supabase siguiendo:
+
+```text
+docs/SUPABASE_SETUP.md
 ```
 
 Cuando conectes APIs, `refresh.py` será el punto de entrada para traer datos nuevos en modo solo lectura.
