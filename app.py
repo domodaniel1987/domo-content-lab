@@ -82,6 +82,13 @@ def inject_styles() -> None:
             padding: 14px;
             box-shadow: 5px 5px 0 {BRAND_COLORS["ink"]};
         }}
+        [data-testid="stMetric"] * {{
+            color: {BRAND_COLORS["ink"]} !important;
+        }}
+        [data-testid="stMetricValue"] {{
+            color: {BRAND_COLORS["ink"]} !important;
+            font-weight: 900 !important;
+        }}
         div[data-testid="stDataFrame"] {{
             border: 2px solid {BRAND_COLORS["ink"]};
         }}
@@ -125,6 +132,37 @@ def inject_styles() -> None:
         section[data-testid="stSidebar"] {{
             background: #fffaf0;
             border-right: 2px solid {BRAND_COLORS["ink"]};
+        }}
+        section[data-testid="stSidebar"] * {{
+            color: {BRAND_COLORS["ink"]} !important;
+        }}
+        section[data-testid="stSidebar"] code {{
+            color: #1B998B !important;
+            background: #111111 !important;
+            border-radius: 6px;
+            padding: 8px !important;
+        }}
+        div[role="radiogroup"] label {{
+            color: {BRAND_COLORS["ink"]} !important;
+            font-weight: 800 !important;
+            opacity: 1 !important;
+        }}
+        div[role="radiogroup"] p {{
+            color: {BRAND_COLORS["ink"]} !important;
+        }}
+        .stButton > button {{
+            background: {BRAND_COLORS["ink"]} !important;
+            color: #fffaf0 !important;
+            border: 2px solid {BRAND_COLORS["ink"]} !important;
+            border-radius: 6px !important;
+            font-weight: 900 !important;
+        }}
+        .stButton > button * {{
+            color: #fffaf0 !important;
+        }}
+        a {{
+            color: {BRAND_COLORS["blue"]} !important;
+            font-weight: 800;
         }}
         @media (max-width: 760px) {{
             h1 {{
@@ -236,6 +274,13 @@ def render_header() -> None:
 
 
 def render_mobile_hint() -> None:
+    if os.getenv("STREAMLIT_SERVER_HEADLESS") or os.getenv("HOSTNAME"):
+        st.sidebar.markdown("### App online")
+        st.sidebar.write("Abierta desde Streamlit Cloud.")
+        st.sidebar.markdown("### IA")
+        st.sidebar.write("Activa" if has_ai_key() else "Sin API key: funciona con estrategia local. Con API key analiza mejor capturas y links.")
+        return
+
     port = os.getenv("DOMO_STREAMLIT_PORT", "8501")
     try:
         local_ip = socket.gethostbyname(socket.gethostname())
