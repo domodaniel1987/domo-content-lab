@@ -723,10 +723,14 @@ def render_idea_card(idea: dict) -> None:
 
 def render_slide_card(slide: dict) -> None:
     with st.container(border=True):
-        st.markdown(f"#### Slide {slide.get('number', '')}")
-        st.markdown(f"**{slide.get('text', '')}**")
+        st.markdown(f"#### Imagen {slide.get('number', '')}")
+        st.markdown(f"### {slide.get('text', '')}")
+        if slide.get("visual"):
+            st.markdown(f"**Visual:** {slide['visual']}")
+        if slide.get("microcopy"):
+            st.markdown(f"**Texto pequeño:** {slide['microcopy']}")
         if slide.get("note"):
-            st.caption(slide["note"])
+            st.markdown(f"**Nota:** {slide['note']}")
 
 
 def render_ai_answer(answer: str) -> None:
@@ -738,6 +742,10 @@ def render_ai_answer(answer: str) -> None:
     if isinstance(payload.get("ideas"), list):
         for idea in payload["ideas"]:
             render_idea_card(idea)
+            if isinstance(idea.get("slides"), list):
+                st.markdown("#### Frases por imagen")
+                for slide in idea["slides"]:
+                    render_slide_card(slide)
         return
 
     if isinstance(payload.get("slides"), list):
