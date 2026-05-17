@@ -129,6 +129,67 @@ def inject_styles() -> None:
             font-weight: 900;
             margin-right: 5px;
         }}
+        .domo-output {{
+            background: #fffaf0;
+            border: 2px solid {BRAND_COLORS["ink"]};
+            border-radius: 6px;
+            box-shadow: 5px 5px 0 {BRAND_COLORS["ink"]};
+            padding: 18px;
+            margin: 18px 0;
+        }}
+        .domo-output-top {{
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            align-items: flex-start;
+            margin-bottom: 12px;
+        }}
+        .domo-badge {{
+            display: inline-block;
+            border: 2px solid {BRAND_COLORS["ink"]};
+            background: {BRAND_COLORS["yellow"]};
+            color: {BRAND_COLORS["ink"]};
+            padding: 3px 8px;
+            font-weight: 900;
+            text-transform: uppercase;
+            font-size: 0.82rem;
+        }}
+        .domo-slide {{
+            background: {BRAND_COLORS["ink"]};
+            color: #fffaf0;
+            border-radius: 6px;
+            padding: 18px;
+            min-height: 230px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            border: 3px solid {BRAND_COLORS["ink"]};
+            box-shadow: 6px 6px 0 {BRAND_COLORS["red"]};
+            margin-bottom: 16px;
+        }}
+        .domo-slide-number {{
+            color: {BRAND_COLORS["yellow"]};
+            font-weight: 900;
+            text-transform: uppercase;
+            font-size: 0.86rem;
+        }}
+        .domo-slide-text {{
+            color: #fffaf0;
+            font-weight: 900;
+            text-transform: uppercase;
+            font-size: 1.65rem;
+            line-height: 1.08;
+            margin: 14px 0;
+        }}
+        .domo-slide-detail {{
+            color: #fffaf0;
+            border-top: 1px solid rgba(255, 250, 240, 0.35);
+            padding-top: 10px;
+            font-size: 0.96rem;
+        }}
+        .domo-slide-detail strong {{
+            color: {BRAND_COLORS["yellow"]};
+        }}
         section[data-testid="stSidebar"] {{
             background: #fffaf0;
             border-right: 2px solid {BRAND_COLORS["ink"]};
@@ -703,34 +764,46 @@ def parse_ai_payload(answer: str):
 
 
 def render_idea_card(idea: dict) -> None:
-    with st.container(border=True):
-        st.markdown(f"### {idea.get('title', 'Idea DOMO')}")
-        cols = st.columns(3)
-        cols[0].markdown(f"**Pilar:** {idea.get('pillar', 'DOMO')}")
-        cols[1].markdown(f"**Formato:** {idea.get('format', 'Contenido')}")
-        cols[2].markdown(f"**Prioridad:** {idea.get('priority', 'Media')}")
-        if idea.get("hook"):
-            st.markdown(f"**Hook:** {idea['hook']}")
-        if idea.get("share_save_mechanism"):
-            st.markdown(f"**Share/save:** {idea['share_save_mechanism']}")
-        if idea.get("cta"):
-            st.markdown(f"**CTA:** {idea['cta']}")
-        if idea.get("strategic_reason"):
-            st.markdown(f"**Razón:** {idea['strategic_reason']}")
-        if idea.get("linkedin_adaptation"):
-            st.markdown(f"**LinkedIn:** {idea['linkedin_adaptation']}")
+    st.markdown(
+        f"""
+        <div class="domo-output">
+            <div class="domo-output-top">
+                <span class="domo-badge">{idea.get('pillar', 'DOMO')}</span>
+                <span class="domo-badge">{idea.get('priority', 'Media')}</span>
+            </div>
+            <h3>{idea.get('title', 'Idea DOMO')}</h3>
+            <p><strong>Formato:</strong> {idea.get('format', 'Contenido')}</p>
+            <p><strong>Hook:</strong> {idea.get('hook', '')}</p>
+            <p><strong>Share/save:</strong> {idea.get('share_save_mechanism', '')}</p>
+            <p><strong>CTA:</strong> {idea.get('cta', '')}</p>
+            <p><strong>Razón:</strong> {idea.get('strategic_reason', '')}</p>
+            <p><strong>LinkedIn:</strong> {idea.get('linkedin_adaptation', '')}</p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
 
 def render_slide_card(slide: dict) -> None:
-    with st.container(border=True):
-        st.markdown(f"#### Imagen {slide.get('number', '')}")
-        st.markdown(f"### {slide.get('text', '')}")
-        if slide.get("visual"):
-            st.markdown(f"**Visual:** {slide['visual']}")
-        if slide.get("microcopy"):
-            st.markdown(f"**Texto pequeño:** {slide['microcopy']}")
-        if slide.get("note"):
-            st.markdown(f"**Nota:** {slide['note']}")
+    visual = slide.get("visual", "")
+    microcopy = slide.get("microcopy", "")
+    note = slide.get("note", "")
+    st.markdown(
+        f"""
+        <div class="domo-slide">
+            <div>
+                <div class="domo-slide-number">Imagen {slide.get('number', '')}</div>
+                <div class="domo-slide-text">{slide.get('text', '')}</div>
+            </div>
+            <div class="domo-slide-detail">
+                <div><strong>Visual:</strong> {visual}</div>
+                <div><strong>Texto pequeño:</strong> {microcopy}</div>
+                <div><strong>Nota:</strong> {note}</div>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
 
 def render_ai_answer(answer: str) -> None:
@@ -951,10 +1024,7 @@ def render_carousels(posts: pd.DataFrame, inspirations: pd.DataFrame, carousels:
         st.markdown(f"### {carousel.get('title', 'Carrusel DOMO')}")
         st.markdown(f"**Objetivo:** {carousel.get('objective', objective)}")
         for slide in carousel.get("slides", []):
-            with st.container(border=True):
-                st.markdown(f"#### Slide {slide.get('number', '')}")
-                st.markdown(f"**{slide.get('text', '')}**")
-                st.caption(slide.get("note", ""))
+            render_slide_card(slide)
         st.markdown("#### Caption")
         st.write(carousel.get("caption", ""))
         st.markdown("#### CTA")
@@ -972,8 +1042,7 @@ def render_carousels(posts: pd.DataFrame, inspirations: pd.DataFrame, carousels:
                 except json.JSONDecodeError:
                     slides = []
                 for slide in slides:
-                    st.markdown(f"**Slide {slide.get('number', '')}:** {slide.get('text', '')}")
-                    st.caption(slide.get("note", ""))
+                    render_slide_card(slide)
                 st.markdown(f"**Caption:** {row.get('caption', '')}")
                 st.markdown(f"**CTA:** {row.get('cta', '')}")
 
