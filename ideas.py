@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 
 import pandas as pd
+import streamlit as st
 
 try:
     from dotenv import load_dotenv
@@ -99,6 +100,14 @@ def load_system_prompt() -> str:
     return ""
 
 
+def get_secret(name: str, default: str = "") -> str:
+    try:
+        value = st.secrets.get(name, "")
+    except Exception:
+        value = ""
+    return value or os.getenv(name, default)
+
+
 def summarize_context(posts: pd.DataFrame) -> dict:
     if posts.empty:
         return {}
@@ -113,7 +122,7 @@ def summarize_context(posts: pd.DataFrame) -> dict:
 
 def generate_with_openai(posts: pd.DataFrame, focus: str, platform: str, count: int) -> list[dict] | None:
     load_dotenv()
-    api_key = os.getenv("OPENAI_API_KEY")
+    api_key = get_secret("OPENAI_API_KEY", "")
     if not api_key:
         return None
 
@@ -144,18 +153,23 @@ def generate_with_openai(posts: pd.DataFrame, focus: str, platform: str, count: 
         ],
     }
 
-    response = client.chat.completions.create(
-        model=os.getenv("OPENAI_MODEL", "gpt-4o-mini"),
-        messages=[
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": json.dumps(user_prompt, ensure_ascii=False)},
-        ],
-        response_format={"type": "json_object"},
-        temperature=0.8,
-    )
-    content = response.choices[0].message.content or "{}"
-    parsed = json.loads(content)
-    return parsed.get("ideas", [])
+    try:
+        response = client.chat.completions.create(
+            model=get_secret("OPENAI_MODEL", "gpt-4o-mini"),
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": json.dumps(user_prompt, ensure_ascii=False)},
+            ],
+            response_format={"type": "json_object"},
+            temperature=0.8,
+        )
+        content = response.choices[0].message.content or "{}"
+        parsed = json.loads(content)
+        return parsed.get("ideas", [])
+    except Exception as exc:
+        st.warning("OpenAI no respondió ahora. Uso el banco local de ideas.")
+        st.caption(f"Detalle técnico: {type(exc).__name__}")
+        return None
 
 
 def score_local_idea(idea: dict, focus: str, platform: str) -> int:
