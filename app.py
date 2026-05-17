@@ -685,6 +685,84 @@ def render_collab_lab(posts: pd.DataFrame, collabs: pd.DataFrame) -> None:
         )
 
 
+def parse_ai_payload(answer: str):
+    if not isinstance(answer, str):
+        return None
+    cleaned = answer.strip()
+    if cleaned.startswith("```"):
+        cleaned = cleaned.strip("`")
+        cleaned = cleaned.replace("json\n", "", 1).replace("JSON\n", "", 1).strip()
+    start = cleaned.find("{")
+    end = cleaned.rfind("}")
+    if start == -1 or end == -1 or end <= start:
+        return None
+    try:
+        return json.loads(cleaned[start : end + 1])
+    except json.JSONDecodeError:
+        return None
+
+
+def render_idea_card(idea: dict) -> None:
+    with st.container(border=True):
+        st.markdown(f"### {idea.get('title', 'Idea DOMO')}")
+        cols = st.columns(3)
+        cols[0].markdown(f"**Pilar:** {idea.get('pillar', 'DOMO')}")
+        cols[1].markdown(f"**Formato:** {idea.get('format', 'Contenido')}")
+        cols[2].markdown(f"**Prioridad:** {idea.get('priority', 'Media')}")
+        if idea.get("hook"):
+            st.markdown(f"**Hook:** {idea['hook']}")
+        if idea.get("share_save_mechanism"):
+            st.markdown(f"**Share/save:** {idea['share_save_mechanism']}")
+        if idea.get("cta"):
+            st.markdown(f"**CTA:** {idea['cta']}")
+        if idea.get("strategic_reason"):
+            st.markdown(f"**Razón:** {idea['strategic_reason']}")
+        if idea.get("linkedin_adaptation"):
+            st.markdown(f"**LinkedIn:** {idea['linkedin_adaptation']}")
+
+
+def render_slide_card(slide: dict) -> None:
+    with st.container(border=True):
+        st.markdown(f"#### Slide {slide.get('number', '')}")
+        st.markdown(f"**{slide.get('text', '')}**")
+        if slide.get("note"):
+            st.caption(slide["note"])
+
+
+def render_ai_answer(answer: str) -> None:
+    payload = parse_ai_payload(answer)
+    if not payload:
+        st.write(answer)
+        return
+
+    if isinstance(payload.get("ideas"), list):
+        for idea in payload["ideas"]:
+            render_idea_card(idea)
+        return
+
+    if isinstance(payload.get("slides"), list):
+        st.markdown(f"### {payload.get('title', 'Carrusel DOMO')}")
+        if payload.get("objective"):
+            st.markdown(f"**Objetivo:** {payload['objective']}")
+        for slide in payload["slides"]:
+            render_slide_card(slide)
+        if payload.get("caption"):
+            st.markdown("#### Caption")
+            st.write(payload["caption"])
+        if payload.get("cta"):
+            st.markdown("#### CTA")
+            st.write(payload["cta"])
+        return
+
+    for key, value in payload.items():
+        pretty_key = key.replace("_", " ").title()
+        st.markdown(f"**{pretty_key}:**")
+        if isinstance(value, (dict, list)):
+            st.json(value)
+        else:
+            st.write(value)
+
+
 def render_assistant(posts: pd.DataFrame, assistant_notes: pd.DataFrame) -> None:
     st.subheader("Asistente DOMO")
     st.write("Pregúntale qué publicar, qué repetir, qué dejar de hacer o cómo convertir una idea en contenido que venda.")
@@ -699,7 +777,7 @@ def render_assistant(posts: pd.DataFrame, assistant_notes: pd.DataFrame) -> None
         add_assistant_note(conn, question, answer)
         conn.close()
         st.markdown("#### Respuesta")
-        st.write(answer)
+        render_ai_answer(answer)
 
     st.markdown("#### Memoria del asistente")
     if assistant_notes.empty:
