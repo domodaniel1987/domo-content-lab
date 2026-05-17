@@ -66,6 +66,8 @@ def build_carousel_prompt(seed: str, objective: str, posts: pd.DataFrame, inspir
             "Cada frase debe sonar a DOMO: criterio visual LATAM, editorial + calle, simple pero con filo.",
             "Debe servir para shares, saves, comentarios de calidad o leads.",
             "Incluir portada, tension, desarrollo, idea guardable y cierre con CTA.",
+            "Cada slide debe ser una imagen del carrusel con frase exacta, visual sugerido, microcopy y nota estrategica.",
+            "Entrega 6 a 8 slides.",
         ],
         "return_json_shape": {
             "title": "...",
@@ -73,7 +75,7 @@ def build_carousel_prompt(seed: str, objective: str, posts: pd.DataFrame, inspir
             "caption": "...",
             "cta": "...",
             "slides": [
-                {"number": 1, "text": "...", "note": "..."}
+                {"number": 1, "text": "...", "visual": "...", "microcopy": "...", "note": "..."}
             ],
         },
     }
