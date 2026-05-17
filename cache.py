@@ -85,6 +85,53 @@ def get_supabase_client() -> Any | None:
         return None
 
 
+def get_supabase_status() -> dict[str, str]:
+    url = normalize_supabase_url(get_secret("SUPABASE_URL", ""))
+    key = (
+        get_secret("SUPABASE_SERVICE_ROLE_KEY", "")
+        or get_secret("SUPABASE_KEY", "")
+        or get_secret("SUPABASE_ANON_KEY", "")
+    )
+    status = {
+        "mode": "SQLite local",
+        "url": "Lista" if url else "Falta SUPABASE_URL",
+        "key": "Lista" if key else "Falta SUPABASE_SERVICE_ROLE_KEY",
+        "package": "Pendiente",
+        "schema": "Pendiente",
+        "message": "La app esta usando memoria local.",
+    }
+    if not url or not key:
+        status["message"] = "Falta pegar la URL o la service_role key en Streamlit Secrets."
+        return status
+
+    try:
+        from supabase import create_client
+
+        status["package"] = "Listo"
+    except Exception as exc:
+        status["package"] = "Falta instalar supabase"
+        status["message"] = f"Sube/reemplaza requirements.txt y reinicia Streamlit. Detalle: {type(exc).__name__}"
+        return status
+
+    try:
+        client = create_client(url, key)
+    except Exception as exc:
+        status["message"] = f"La URL o key no pudo crear conexion. Detalle: {type(exc).__name__}"
+        return status
+
+    try:
+        client.table("posts").select("id").limit(1).execute()
+    except Exception as exc:
+        status["schema"] = "Falta SQL o permisos"
+        status["message"] = f"Falta correr supabase_schema.sql o revisar la key. Detalle: {type(exc).__name__}"
+        return status
+
+    status["mode"] = "Supabase"
+    status["schema"] = "Listo"
+    status["message"] = "Supabase conectado. El historial ya puede quedar en la nube."
+    return status
+
+
 def supabase_schema_ready(client: Any) -> bool:
     try:
         client.table("posts").select("id").limit(1).execute()

@@ -31,6 +31,7 @@ from cache import (
     get_collab_targets,
     get_content_ideas,
     get_database_mode,
+    get_supabase_status,
     get_daily_metrics,
     get_inspirations,
     get_monetization_signals,
@@ -365,7 +366,7 @@ def render_header() -> None:
 
 
 def render_mobile_hint() -> None:
-    db_mode = get_database_mode()
+    db_mode = get_supabase_status()["mode"]
     if os.getenv("STREAMLIT_SERVER_HEADLESS") or os.getenv("HOSTNAME"):
         st.sidebar.markdown("### App online")
         st.sidebar.write("Abierta desde Streamlit Cloud.")
@@ -1021,7 +1022,8 @@ def render_admin() -> None:
     st.write("Panel de salud del sistema. Aquí ves qué está listo y qué falta para operación 100%.")
     is_cloud = bool(os.getenv("HOSTNAME") or os.getenv("STREAMLIT_SERVER_HEADLESS"))
     instagram_ready = bool(get_secret("INSTAGRAM_ACCESS_TOKEN", "") and get_secret("INSTAGRAM_BUSINESS_ACCOUNT_ID", ""))
-    database_mode = get_database_mode()
+    supabase_status = get_supabase_status()
+    database_mode = supabase_status["mode"]
     persistent_db = database_mode == "Supabase"
     checks = pd.DataFrame(
         [
@@ -1034,6 +1036,24 @@ def render_admin() -> None:
         ]
     )
     st.dataframe(checks, hide_index=True, use_container_width=True)
+
+    st.markdown("#### Diagnóstico Supabase")
+    st.dataframe(
+        pd.DataFrame(
+            [
+                {"Punto": "URL", "Estado": supabase_status["url"]},
+                {"Punto": "Service role key", "Estado": supabase_status["key"]},
+                {"Punto": "Paquete Python", "Estado": supabase_status["package"]},
+                {"Punto": "Tablas SQL", "Estado": supabase_status["schema"]},
+            ]
+        ),
+        hide_index=True,
+        use_container_width=True,
+    )
+    if persistent_db:
+        st.success(supabase_status["message"])
+    else:
+        st.info(supabase_status["message"])
 
     completed = 0
     completed += 1 if is_cloud else 0
