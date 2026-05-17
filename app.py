@@ -117,8 +117,37 @@ def inject_styles() -> None:
             box-shadow: 4px 4px 0 {BRAND_COLORS["ink"]};
         }}
         .domo-action strong {{
+            display: block;
             text-transform: uppercase;
             font-size: 1.02rem;
+            margin-top: 10px;
+            line-height: 1.15;
+        }}
+        .domo-action p {{
+            margin-bottom: 0;
+        }}
+        .domo-launch {{
+            background: {BRAND_COLORS["ink"]};
+            color: #fffaf0;
+            border-radius: 6px;
+            border: 2px solid {BRAND_COLORS["ink"]};
+            box-shadow: 6px 6px 0 {BRAND_COLORS["yellow"]};
+            padding: 18px;
+            min-height: 165px;
+            margin-bottom: 12px;
+        }}
+        .domo-launch h3 {{
+            color: #fffaf0 !important;
+            margin: 8px 0;
+            font-size: 1.15rem;
+        }}
+        .domo-launch p {{
+            color: #fffaf0 !important;
+            margin: 0;
+        }}
+        .domo-launch .domo-badge {{
+            background: {BRAND_COLORS["red"]};
+            color: #fffaf0;
         }}
         .domo-pill {{
             display: inline-block;
@@ -356,10 +385,36 @@ def render_mobile_hint() -> None:
 
 
 def render_command_center(posts: pd.DataFrame, action_items: pd.DataFrame) -> None:
-    st.subheader("Qué hacemos hoy")
+    st.subheader("Elige tu siguiente movimiento")
     avg_share = posts["share_rate"].mean()
     avg_save = posts["save_rate"].mean()
     avg_comments = posts["quality_comment_rate"].mean()
+
+    launchers = [
+        ("Carruseles", "Frases por imagen", "Convierte una idea o link en slides listos para diseñar."),
+        ("Asistente", "Estrategia rápida", "Pregúntale qué publicar, repetir o convertir en negocio."),
+        ("Inspiración", "Analizar link", "Pega algo que viste y tradúcelo a estilo DOMO."),
+        ("Capturas", "Subir métricas", "Guarda screenshots y números para crear memoria."),
+        ("Trends", "Radar web", "Busca señales de tu rama para ideas y oportunidades."),
+        ("Collabs", "Marcas cool", "Encuentra con quién acercarte y cómo hacerlo."),
+    ]
+
+    cols = st.columns(3)
+    for index, (target, label, description) in enumerate(launchers):
+        with cols[index % 3]:
+            st.markdown(
+                f"""
+                <div class="domo-launch">
+                    <span class="domo-badge">{label}</span>
+                    <h3>{target}</h3>
+                    <p>{description}</p>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+            if st.button(f"Ir a {target}", key=f"go_{target}"):
+                st.session_state["page"] = target
+                st.rerun()
 
     suggested = [
         {
@@ -382,6 +437,7 @@ def render_command_center(posts: pd.DataFrame, action_items: pd.DataFrame) -> No
         },
     ]
 
+    st.subheader("Qué hacemos hoy")
     cols = st.columns(3)
     for col, item in zip(cols, suggested):
         with col:
@@ -401,7 +457,7 @@ def render_command_center(posts: pd.DataFrame, action_items: pd.DataFrame) -> No
                 conn.close()
                 st.success("Acción guardada.")
 
-    st.subheader("Señales importantes")
+    st.subheader("Pulso de crecimiento")
     cols = st.columns(3)
     cols[0].metric("Share rate", as_percent(avg_share), help="Meta: que la gente lo quiera mandar a alguien.")
     cols[1].metric("Save rate", as_percent(avg_save), help="Meta: que la pieza sea referencia útil.")
@@ -1090,22 +1146,27 @@ def main() -> None:
         carousels,
     ) = load_data()
 
+    nav_options = [
+        "Inicio",
+        "Asistente",
+        "Ideas",
+        "Carruseles",
+        "Capturas",
+        "Trends",
+        "Inspiración",
+        "Collabs",
+        "Dashboard",
+        "Data Center",
+        "Admin",
+    ]
+    if "page" not in st.session_state:
+        st.session_state["page"] = "Inicio"
     page = st.sidebar.radio(
         "Navegación",
-        [
-            "Inicio",
-            "Asistente",
-            "Ideas",
-            "Carruseles",
-            "Capturas",
-            "Trends",
-            "Inspiración",
-            "Collabs",
-            "Dashboard",
-            "Data Center",
-            "Admin",
-        ],
+        nav_options,
+        index=nav_options.index(st.session_state["page"]) if st.session_state["page"] in nav_options else 0,
     )
+    st.session_state["page"] = page
 
     if page == "Inicio":
         render_command_center(posts, action_items)
