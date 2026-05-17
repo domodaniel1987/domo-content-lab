@@ -19,8 +19,15 @@ create table if not exists posts (
     share_rate double precision not null,
     save_rate double precision not null,
     quality_comment_rate double precision not null,
-    profile_visit_rate double precision not null
+    profile_visit_rate double precision not null,
+    external_id text,
+    permalink text,
+    imported_at timestamptz default now()
 );
+
+alter table posts add column if not exists external_id text;
+alter table posts add column if not exists permalink text;
+alter table posts add column if not exists imported_at timestamptz default now();
 
 create table if not exists daily_metrics (
     date text primary key,
@@ -138,6 +145,7 @@ create table if not exists carousel_drafts (
 
 create index if not exists posts_date_idx on posts (date desc);
 create index if not exists posts_platform_idx on posts (platform);
+create index if not exists posts_external_id_idx on posts (external_id);
 create index if not exists carousel_drafts_created_at_idx on carousel_drafts (created_at desc);
 create index if not exists inspirations_created_at_idx on inspirations (created_at desc);
 create index if not exists assistant_notes_created_at_idx on assistant_notes (created_at desc);

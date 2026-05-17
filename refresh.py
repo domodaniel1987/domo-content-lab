@@ -10,13 +10,19 @@ except ImportError:
         return False
 
 from cache import get_connection, initialize_database
+from instagram_api import InstagramAPIError, refresh_instagram_to_cache
 
 
 def refresh_instagram_read_only() -> str:
     token = os.getenv("INSTAGRAM_ACCESS_TOKEN")
-    if not token:
+    account_id = os.getenv("INSTAGRAM_BUSINESS_ACCOUNT_ID")
+    if not token or not account_id:
         return "Instagram: sin token. Se mantienen datos de muestra."
-    return "Instagram: token detectado. Conecta aquí la lectura de Graph API cuando tengas permisos."
+    try:
+        result = refresh_instagram_to_cache(limit=int(os.getenv("INSTAGRAM_REFRESH_LIMIT", "20")))
+    except InstagramAPIError as exc:
+        return f"Instagram: no se pudo actualizar. {exc}"
+    return result["message"]
 
 
 def refresh_linkedin_read_only() -> str:

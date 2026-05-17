@@ -90,6 +90,12 @@ Cuando conectes APIs, `refresh.py` será el punto de entrada para traer datos nu
 python refresh.py
 ```
 
+Para conectar Instagram Graph API, revisa:
+
+```text
+docs/INSTAGRAM_SETUP.md
+```
+
 ## Capturas y avance
 
 En la pestaña `Capturas` puedes:

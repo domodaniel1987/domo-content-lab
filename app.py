@@ -44,6 +44,7 @@ from cache import (
 )
 from carousel import generate_carousel, slides_to_json
 from ideas import generate_ideas
+from instagram_api import InstagramAPIError, get_instagram_status, refresh_instagram_to_cache
 from trend_scout import DEFAULT_TREND_QUERIES, scout_trends, suggest_collabs
 
 
@@ -1054,6 +1055,51 @@ def render_admin() -> None:
         st.success(supabase_status["message"])
     else:
         st.info(supabase_status["message"])
+
+    st.markdown("#### Instagram API")
+    ig_status = get_instagram_status(check_api=False)
+    st.dataframe(
+        pd.DataFrame(
+            [
+                {"Punto": "Access token", "Estado": ig_status["token"]},
+                {"Punto": "Business account ID", "Estado": ig_status["business_account_id"]},
+                {"Punto": "API", "Estado": ig_status["api"]},
+            ]
+        ),
+        hide_index=True,
+        use_container_width=True,
+    )
+    col_a, col_b = st.columns(2)
+    with col_a:
+        if st.button("Probar conexión Instagram"):
+            checked = get_instagram_status(check_api=True)
+            if checked["ready"]:
+                account = checked.get("account", {})
+                st.success(checked["message"])
+                st.write(
+                    {
+                        "usuario": account.get("username", ""),
+                        "followers": account.get("followers_count", 0),
+                        "media": account.get("media_count", 0),
+                    }
+                )
+            else:
+                st.warning(checked["message"])
+    with col_b:
+        limit = st.number_input("Posts a leer", min_value=5, max_value=50, value=20, step=5)
+        if st.button("Actualizar métricas de Instagram", type="primary"):
+            with st.spinner("Leyendo Instagram y guardando en Supabase..."):
+                try:
+                    result = refresh_instagram_to_cache(limit=int(limit))
+                except InstagramAPIError as exc:
+                    st.error(f"No se pudo actualizar Instagram: {exc}")
+                else:
+                    st.success(result["message"])
+                    if result["unsupported_metrics"]:
+                        st.caption(
+                            "Algunas métricas no están disponibles para ciertos formatos o permisos: "
+                            + ", ".join(result["unsupported_metrics"][:8])
+                        )
 
     completed = 0
     completed += 1 if is_cloud else 0

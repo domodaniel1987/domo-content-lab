@@ -35,6 +35,7 @@ POST_RATE_COLUMNS = [
     "quality_comment_rate",
     "profile_visit_rate",
 ]
+POST_OPTIONAL_COLUMNS = ["external_id", "permalink", "imported_at"]
 POST_COLUMNS = [*POST_BASE_COLUMNS, *POST_RATE_COLUMNS]
 
 
@@ -120,7 +121,7 @@ def get_supabase_status() -> dict[str, str]:
         return status
 
     try:
-        client.table("posts").select("id").limit(1).execute()
+        client.table("posts").select("id,external_id,permalink").limit(1).execute()
     except Exception as exc:
         status["schema"] = "Falta SQL o permisos"
         status["message"] = f"Falta correr supabase_schema.sql o revisar la key. Detalle: {type(exc).__name__}"
@@ -134,7 +135,7 @@ def get_supabase_status() -> dict[str, str]:
 
 def supabase_schema_ready(client: Any) -> bool:
     try:
-        client.table("posts").select("id").limit(1).execute()
+        client.table("posts").select("id,external_id,permalink").limit(1).execute()
         return True
     except Exception:
         return False
@@ -164,6 +165,7 @@ def initialize_database() -> None:
     conn = get_connection()
     if not is_supabase(conn):
         create_tables(conn)
+        migrate_sqlite_schema(conn)
     seed_if_empty(conn)
     conn.close()
 
@@ -192,7 +194,10 @@ def create_tables(conn: sqlite3.Connection) -> None:
             share_rate REAL NOT NULL,
             save_rate REAL NOT NULL,
             quality_comment_rate REAL NOT NULL,
-            profile_visit_rate REAL NOT NULL
+            profile_visit_rate REAL NOT NULL,
+            external_id TEXT,
+            permalink TEXT,
+            imported_at TEXT DEFAULT CURRENT_TIMESTAMP
         );
 
         CREATE TABLE IF NOT EXISTS daily_metrics (
@@ -313,6 +318,19 @@ def create_tables(conn: sqlite3.Connection) -> None:
     conn.commit()
 
 
+def migrate_sqlite_schema(conn: sqlite3.Connection) -> None:
+    existing = {row[1] for row in conn.execute("PRAGMA table_info(posts)").fetchall()}
+    migrations = {
+        "external_id": "ALTER TABLE posts ADD COLUMN external_id TEXT",
+        "permalink": "ALTER TABLE posts ADD COLUMN permalink TEXT",
+        "imported_at": "ALTER TABLE posts ADD COLUMN imported_at TEXT",
+    }
+    for column, sql in migrations.items():
+        if column not in existing:
+            conn.execute(sql)
+    conn.commit()
+
+
 def table_count(conn: sqlite3.Connection | SupabaseConnection, table: str) -> int:
     if is_supabase(conn):
         result = conn.client.table(table).select("id", count="exact").limit(1).execute()
@@ -341,6 +359,10 @@ def insert_rows(conn: sqlite3.Connection | SupabaseConnection, table: str, rows:
 
 def enrich_post_row(row: tuple) -> dict[str, Any]:
     data = dict(zip(POST_BASE_COLUMNS, row))
+    return enrich_post_record(data)
+
+
+def enrich_post_record(data: dict[str, Any]) -> dict[str, Any]:
     reach = max(float(data["reach"]), 1.0)
     likes = float(data["likes"])
     comments = float(data["comments"])
@@ -432,6 +454,41 @@ def seed_if_empty(conn: sqlite3.Connection | SupabaseConnection) -> None:
 
 def insert_posts(conn: sqlite3.Connection | SupabaseConnection, rows: Iterable[tuple]) -> None:
     insert_rows(conn, "posts", [enrich_post_row(row) for row in rows])
+
+
+def upsert_post_record(conn: sqlite3.Connection | SupabaseConnection, post: dict[str, Any]) -> None:
+    payload = enrich_post_record(post.copy())
+    external_id = payload.get("external_id", "")
+
+    if is_supabase(conn):
+        if external_id:
+            existing = (
+                conn.client.table("posts")
+                .select("id")
+                .eq("external_id", external_id)
+                .limit(1)
+                .execute()
+                .data
+                or []
+            )
+            if existing:
+                conn.client.table("posts").update(payload).eq("external_id", external_id).execute()
+                return
+        conn.client.table("posts").insert(payload).execute()
+        return
+
+    if external_id:
+        existing = conn.execute("SELECT id FROM posts WHERE external_id = ? LIMIT 1", (external_id,)).fetchone()
+        if existing:
+            columns = list(payload.keys())
+            set_sql = ", ".join([f"{column} = ?" for column in columns])
+            values = [payload[column] for column in columns]
+            values.append(int(existing[0]))
+            conn.execute(f"UPDATE posts SET {set_sql} WHERE id = ?", values)
+            conn.commit()
+            return
+
+    insert_rows(conn, "posts", [payload])
 
 
 def read_sql(conn: sqlite3.Connection | SupabaseConnection, query: str):
