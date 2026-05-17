@@ -840,16 +840,18 @@ def render_idea_card(idea: dict) -> None:
     )
 
 
-def render_slide_card(slide: dict) -> None:
+def render_slide_card(slide: dict, key_prefix: str = "slide") -> None:
     visual = slide.get("visual", "")
     microcopy = slide.get("microcopy", "")
     note = slide.get("note", "")
+    text = slide.get("text", "")
+    number = slide.get("number", "")
     st.markdown(
         f"""
         <div class="domo-slide">
             <div>
-                <div class="domo-slide-number">Imagen {slide.get('number', '')}</div>
-                <div class="domo-slide-text">{slide.get('text', '')}</div>
+                <div class="domo-slide-number">Imagen {number}</div>
+                <div class="domo-slide-text">{text}</div>
             </div>
             <div class="domo-slide-detail">
                 <div><strong>Visual:</strong> {visual}</div>
@@ -859,6 +861,19 @@ def render_slide_card(slide: dict) -> None:
         </div>
         """,
         unsafe_allow_html=True,
+    )
+    st.text_area(
+        f"Texto para copiar - Imagen {number}",
+        text,
+        height=90,
+        key=f"{key_prefix}_copy_{number}_{abs(hash(text))}",
+    )
+    st.download_button(
+        f"Descargar texto imagen {number}",
+        data=text.encode("utf-8"),
+        file_name=f"domo_slide_{number}.txt",
+        mime="text/plain",
+        key=f"{key_prefix}_download_{number}_{abs(hash(text))}",
     )
 
 
@@ -874,7 +889,7 @@ def render_ai_answer(answer: str) -> None:
             if isinstance(idea.get("slides"), list):
                 st.markdown("#### Frases por imagen")
                 for slide in idea["slides"]:
-                    render_slide_card(slide)
+                    render_slide_card(slide, key_prefix=f"idea_{idea.get('title', 'idea')}")
         return
 
     if isinstance(payload.get("slides"), list):
@@ -882,7 +897,7 @@ def render_ai_answer(answer: str) -> None:
         if payload.get("objective"):
             st.markdown(f"**Objetivo:** {payload['objective']}")
         for slide in payload["slides"]:
-            render_slide_card(slide)
+            render_slide_card(slide, key_prefix=f"ai_{payload.get('title', 'carousel')}")
         if payload.get("caption"):
             st.markdown("#### Caption")
             st.write(payload["caption"])
@@ -1111,7 +1126,7 @@ def render_carousels(posts: pd.DataFrame, inspirations: pd.DataFrame, carousels:
         st.markdown(f"### {carousel.get('title', 'Carrusel DOMO')}")
         st.markdown(f"**Objetivo:** {carousel.get('objective', objective)}")
         for slide in carousel.get("slides", []):
-            render_slide_card(slide)
+            render_slide_card(slide, key_prefix=f"last_{carousel.get('title', 'carousel')}")
         script = carousel_to_script(carousel)
         st.markdown("#### Guion completo")
         st.text_area("Listo para copiar", script, height=280)
@@ -1138,7 +1153,7 @@ def render_carousels(posts: pd.DataFrame, inspirations: pd.DataFrame, carousels:
                 except json.JSONDecodeError:
                     slides = []
                 for slide in slides:
-                    render_slide_card(slide)
+                    render_slide_card(slide, key_prefix=f"saved_{row['id']}")
                 script = carousel_to_script(
                     {
                         "title": row["title"],
