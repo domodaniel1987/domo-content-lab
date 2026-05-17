@@ -1012,21 +1012,44 @@ def render_data_center(
 
 def render_admin() -> None:
     st.subheader("Admin")
-    st.write("Configuración simple del sistema. Aquí revisas si está listo para operar como app real.")
+    st.write("Panel de salud del sistema. Aquí ves qué está listo y qué falta para operación 100%.")
+    is_cloud = bool(os.getenv("HOSTNAME") or os.getenv("STREAMLIT_SERVER_HEADLESS"))
+    instagram_ready = bool(get_secret("INSTAGRAM_ACCESS_TOKEN", "") and get_secret("INSTAGRAM_BUSINESS_ACCOUNT_ID", ""))
+    persistent_db = bool(get_secret("SUPABASE_URL", "") or get_secret("DATABASE_URL", ""))
     checks = pd.DataFrame(
         [
-            {"Área": "IA", "Estado": "Lista" if has_ai_key() else "Falta OPENAI_API_KEY", "Para qué sirve": "Ideas, capturas, asistente y lectura de links."},
-            {"Área": "Instagram API", "Estado": "Configurada" if os.getenv("INSTAGRAM_ACCESS_TOKEN") else "Pendiente", "Para qué sirve": "Actualizar métricas casi automático."},
-            {"Área": "Acceso remoto", "Estado": "Pendiente", "Para qué sirve": "Abrir desde celular/oficina desde cualquier lugar."},
-            {"Área": "Base de datos", "Estado": "SQLite local", "Para qué sirve": "Perfecto para prototipo; para nube conviene Supabase/Postgres."},
+            {"Área": "App online", "Estado": "Lista" if is_cloud else "Local", "Para qué sirve": "Abrir desde celular/oficina."},
+            {"Área": "IA", "Estado": "Lista" if has_ai_key() else "Falta OPENAI_API_KEY", "Para qué sirve": "Ideas, carruseles, links, asistente."},
+            {"Área": "Instagram API", "Estado": "Configurada" if instagram_ready else "Pendiente", "Para qué sirve": "Actualizar métricas casi automático."},
+            {"Área": "Datos persistentes", "Estado": "Lista" if persistent_db else "Temporal en Streamlit", "Para qué sirve": "No perder historial al reiniciar."},
+            {"Área": "Capturas", "Estado": "Funciona manual", "Para qué sirve": "Subir screenshots y registrar métricas."},
+            {"Área": "Carruseles", "Estado": "Listo", "Para qué sirve": "Generar frases por imagen y guion."},
         ]
     )
     st.dataframe(checks, hide_index=True, use_container_width=True)
 
-    st.markdown("#### Para que funcione desde cualquier lugar")
+    completed = 0
+    completed += 1 if is_cloud else 0
+    completed += 1 if has_ai_key() else 0
+    completed += 1 if instagram_ready else 0
+    completed += 1 if persistent_db else 0
+    completed += 1
+    completed += 1
+    readiness = int((completed / 6) * 100)
+    st.metric("Nivel operativo", f"{readiness}%")
+
+    st.markdown("#### Qué significa")
+    if readiness >= 80:
+        st.success("La app ya está lista para uso diario. Lo pendiente es conectar datos reales/persistentes.")
+    else:
+        st.warning("La app funciona, pero todavía falta conectar datos automáticos o persistencia para llamarla 100% producción.")
+
+    st.markdown("#### Orden para cerrar 100%")
     st.write(
-        "Hay que desplegarlo en la nube con login. Para gratis: Streamlit Cloud sirve para probar; "
-        "para datos serios conviene sumar Supabase gratis como base persistente."
+        "1. Usar la app diariamente con carruseles, ideas e inspiración.\n\n"
+        "2. Conectar Supabase para que el historial no dependa de archivos temporales de Streamlit.\n\n"
+        "3. Conectar Instagram Graph API oficial para traer métricas reales.\n\n"
+        "4. Automatizar refresh diario/semanal de métricas y trends."
     )
 
 
