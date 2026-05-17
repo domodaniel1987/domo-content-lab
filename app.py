@@ -278,7 +278,7 @@ def render_mobile_hint() -> None:
         st.sidebar.markdown("### App online")
         st.sidebar.write("Abierta desde Streamlit Cloud.")
         st.sidebar.markdown("### IA")
-        st.sidebar.write("Activa" if has_ai_key() else "Sin API key: funciona con estrategia local. Con API key analiza mejor capturas y links.")
+        st.sidebar.write("Key configurada. Si falla, revisa saldo/cuota en OpenAI." if has_ai_key() else "Sin API key: funciona con estrategia local. Con API key analiza mejor capturas y links.")
         return
 
     port = os.getenv("DOMO_STREAMLIT_PORT", "8501")
@@ -291,7 +291,7 @@ def render_mobile_hint() -> None:
     st.sidebar.code(f"http://{local_ip}:{port}")
     st.sidebar.caption("En iPhone o Android puedes usar 'Agregar a pantalla de inicio' para sentirlo como app.")
     st.sidebar.markdown("### IA")
-    st.sidebar.write("Activa" if has_ai_key() else "Sin API key: funciona con estrategia local. Con API key analiza mejor capturas y links.")
+    st.sidebar.write("Key configurada. Si falla, revisa saldo/cuota en OpenAI." if has_ai_key() else "Sin API key: funciona con estrategia local. Con API key analiza mejor capturas y links.")
 
 
 def render_command_center(posts: pd.DataFrame, action_items: pd.DataFrame) -> None:
