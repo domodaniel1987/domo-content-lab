@@ -9,6 +9,7 @@ from typing import Any
 
 import pandas as pd
 import requests
+import streamlit as st
 
 from ideas import load_system_prompt, summarize_context
 
@@ -21,12 +22,20 @@ except ImportError:
 
 def has_ai_key() -> bool:
     load_dotenv()
-    return bool(os.getenv("OPENAI_API_KEY"))
+    return bool(get_secret("OPENAI_API_KEY", ""))
+
+
+def get_secret(name: str, default: str = "") -> str:
+    try:
+        value = st.secrets.get(name, "")
+    except Exception:
+        value = ""
+    return value or os.getenv(name, default)
 
 
 def get_openai_client():
     load_dotenv()
-    api_key = os.getenv("OPENAI_API_KEY")
+    api_key = get_secret("OPENAI_API_KEY", "")
     if not api_key:
         return None
     try:
@@ -59,15 +68,23 @@ def ai_complete(system_prompt: str, user_payload: dict) -> str | None:
     client = get_openai_client()
     if client is None:
         return None
-    response = client.chat.completions.create(
-        model=os.getenv("OPENAI_MODEL", "gpt-4o-mini"),
-        messages=[
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": json.dumps(user_payload, ensure_ascii=False)},
-        ],
-        temperature=0.75,
-    )
-    return response.choices[0].message.content
+    try:
+        response = client.chat.completions.create(
+            model=get_secret("OPENAI_MODEL", "gpt-4o-mini"),
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": json.dumps(user_payload, ensure_ascii=False)},
+            ],
+            temperature=0.75,
+        )
+        return response.choices[0].message.content
+    except Exception as exc:
+        st.warning(
+            "La IA de OpenAI respondió con límite/cuota o un error temporal. "
+            "La app seguirá usando estrategia local por ahora."
+        )
+        st.caption(f"Detalle técnico: {type(exc).__name__}")
+        return None
 
 
 def answer_as_domo_assistant(question: str, posts: pd.DataFrame) -> str:
@@ -152,7 +169,7 @@ def analyze_screenshot_for_domo(image_path: str, notes: str, posts: pd.DataFrame
     image_bytes = Path(image_path).read_bytes()
     image_b64 = base64.b64encode(image_bytes).decode("utf-8")
     response = client.chat.completions.create(
-        model=os.getenv("OPENAI_VISION_MODEL", os.getenv("OPENAI_MODEL", "gpt-4o-mini")),
+        model=get_secret("OPENAI_VISION_MODEL", get_secret("OPENAI_MODEL", "gpt-4o-mini")),
         messages=[
             {
                 "role": "system",
