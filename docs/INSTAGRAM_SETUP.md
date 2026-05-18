@@ -10,9 +10,21 @@ En Streamlit Cloud, abre:
 
 Necesitas estas dos variables:
 
+Si usas el producto nuevo de Instagram dentro de Meta Developers, puedes usar este modo:
+
 ```toml
-INSTAGRAM_ACCESS_TOKEN = "tu-token"
-INSTAGRAM_BUSINESS_ACCOUNT_ID = "tu-instagram-business-account-id"
+INSTAGRAM_API_MODE = "instagram_login"
+INSTAGRAM_ACCESS_TOKEN = "tu-token-de-instagram"
+INSTAGRAM_BUSINESS_ACCOUNT_ID = ""
+```
+
+La app detecta el ID de la cuenta desde el token.
+
+Si usas el camino antiguo con pagina de Facebook, usa:
+
+```toml
+INSTAGRAM_ACCESS_TOKEN = "token-de-pagina"
+INSTAGRAM_BUSINESS_ACCOUNT_ID = "id-de-instagram-business-account"
 ```
 
 ## Permisos que debe tener el token
