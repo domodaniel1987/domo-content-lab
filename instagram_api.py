@@ -10,7 +10,8 @@ from cache import get_connection, get_secret, initialize_database, upsert_post_r
 
 
 GRAPH_VERSION = os.getenv("META_GRAPH_VERSION", "v24.0")
-GRAPH_BASE_URL = f"https://graph.facebook.com/{GRAPH_VERSION}"
+FACEBOOK_GRAPH_BASE_URL = f"https://graph.facebook.com/{GRAPH_VERSION}"
+INSTAGRAM_GRAPH_BASE_URL = f"https://graph.instagram.com/{GRAPH_VERSION}"
 
 MEDIA_FIELDS = ",".join(
     [
@@ -51,20 +52,27 @@ def instagram_config() -> dict[str, str]:
     return {
         "token": get_secret("INSTAGRAM_ACCESS_TOKEN", ""),
         "business_account_id": get_secret("INSTAGRAM_BUSINESS_ACCOUNT_ID", ""),
+        "api_mode": get_secret("INSTAGRAM_API_MODE", "").lower(),
     }
+
+
+def should_use_instagram_login(config: dict[str, str] | None = None) -> bool:
+    config = config or instagram_config()
+    return config.get("api_mode") in {"instagram_login", "instagram", "direct"} or not config.get("business_account_id")
 
 
 def get_instagram_status(check_api: bool = False) -> dict[str, Any]:
     config = instagram_config()
+    instagram_login_mode = should_use_instagram_login(config)
     status: dict[str, Any] = {
         "token": "Lista" if config["token"] else "Falta INSTAGRAM_ACCESS_TOKEN",
-        "business_account_id": "Lista" if config["business_account_id"] else "Falta INSTAGRAM_BUSINESS_ACCOUNT_ID",
+        "business_account_id": "Lista" if config["business_account_id"] else "Automatico con Instagram Login",
         "api": "No probado",
         "account": {},
-        "message": "Pega token e Instagram Business Account ID en Streamlit Secrets.",
+        "message": "Pega token de Instagram en Streamlit Secrets.",
         "ready": False,
     }
-    if not config["token"] or not config["business_account_id"]:
+    if not config["token"]:
         return status
 
     if not check_api:
@@ -72,12 +80,15 @@ def get_instagram_status(check_api: bool = False) -> dict[str, Any]:
         return status
 
     try:
-        account = graph_get(
-            config["business_account_id"],
-            {
-                "fields": "id,username,followers_count,media_count",
-            },
-        )
+        if instagram_login_mode:
+            account = instagram_graph_get("me", {"fields": "id,user_id,username,account_type,media_count"})
+        else:
+            account = facebook_graph_get(
+                config["business_account_id"],
+                {
+                    "fields": "id,username,followers_count,media_count",
+                },
+            )
     except InstagramAPIError as exc:
         status["api"] = "Error"
         status["message"] = str(exc)
@@ -90,7 +101,7 @@ def get_instagram_status(check_api: bool = False) -> dict[str, Any]:
     return status
 
 
-def graph_get(path: str, params: dict[str, Any] | None = None) -> dict[str, Any]:
+def request_graph(base_url: str, path: str, params: dict[str, Any] | None = None) -> dict[str, Any]:
     config = instagram_config()
     if not config["token"]:
         raise InstagramAPIError("Falta INSTAGRAM_ACCESS_TOKEN.")
@@ -99,7 +110,7 @@ def graph_get(path: str, params: dict[str, Any] | None = None) -> dict[str, Any]
     final_params = dict(params or {})
     final_params["access_token"] = config["token"]
     response = requests.get(
-        f"{GRAPH_BASE_URL}/{clean_path}",
+        f"{base_url}/{clean_path}",
         params=final_params,
         timeout=20,
         headers={"User-Agent": "DOMOContentLab/1.0"},
@@ -116,11 +127,29 @@ def graph_get(path: str, params: dict[str, Any] | None = None) -> dict[str, Any]
     raise InstagramAPIError(message)
 
 
+def facebook_graph_get(path: str, params: dict[str, Any] | None = None) -> dict[str, Any]:
+    return request_graph(FACEBOOK_GRAPH_BASE_URL, path, params)
+
+
+def instagram_graph_get(path: str, params: dict[str, Any] | None = None) -> dict[str, Any]:
+    return request_graph(INSTAGRAM_GRAPH_BASE_URL, path, params)
+
+
+def get_instagram_account_id() -> str:
+    config = instagram_config()
+    if config["business_account_id"]:
+        return config["business_account_id"]
+    me = instagram_graph_get("me", {"fields": "id,user_id,username"})
+    return str(me.get("id") or me.get("user_id") or "")
+
+
 def fetch_instagram_media(limit: int = 20) -> list[dict[str, Any]]:
-    account_id = instagram_config()["business_account_id"]
+    config = instagram_config()
+    account_id = get_instagram_account_id()
     if not account_id:
-        raise InstagramAPIError("Falta INSTAGRAM_BUSINESS_ACCOUNT_ID.")
-    payload = graph_get(
+        raise InstagramAPIError("No pude detectar el ID de Instagram desde el token.")
+    graph = instagram_graph_get if should_use_instagram_login(config) else facebook_graph_get
+    payload = graph(
         f"{account_id}/media",
         {
             "fields": MEDIA_FIELDS,
@@ -142,9 +171,10 @@ def extract_metric_value(item: dict[str, Any]) -> int:
 def fetch_media_insights(media_id: str) -> tuple[dict[str, int], list[str]]:
     insights: dict[str, int] = {}
     unsupported: list[str] = []
+    graph = instagram_graph_get if should_use_instagram_login() else facebook_graph_get
     for metric in MEDIA_INSIGHT_METRICS:
         try:
-            payload = graph_get(f"{media_id}/insights", {"metric": metric})
+            payload = graph(f"{media_id}/insights", {"metric": metric})
         except InstagramAPIError:
             unsupported.append(metric)
             continue
