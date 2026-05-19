@@ -10,46 +10,77 @@ import pandas as pd
 import plotly.express as px
 import streamlit as st
 
+import cache as cache_store
 from assistant import (
     analyze_link_for_domo,
     analyze_screenshot_for_domo,
     answer_as_domo_assistant,
     has_ai_key,
 )
-from cache import (
-    DATA_DIR,
-    add_action_item,
-    add_assistant_note,
-    add_carousel_draft,
-    add_collab_target,
-    add_content_idea,
-    add_inspiration,
-    add_manual_post,
-    add_screenshot,
-    add_trend_item,
-    get_connection,
-    get_action_items,
-    get_assistant_notes,
-    get_carousel_drafts,
-    get_collab_targets,
-    get_content_ideas,
-    get_database_mode,
-    get_supabase_status,
-    get_daily_metrics,
-    get_inspirations,
-    get_monetization_signals,
-    get_posts,
-    get_profile_metrics,
-    get_screenshots,
-    get_trend_items,
-    initialize_database,
-    update_action_status,
-)
 from carousel import generate_carousel, slides_to_json
 from ideas import generate_ideas
 from instagram_api import InstagramAPIError, get_instagram_status, refresh_instagram_to_cache
 from linkedin_api import LinkedInAPIError, get_linkedin_status, refresh_linkedin_to_cache
 from trend_scout import DEFAULT_TREND_QUERIES, scout_trends, suggest_collabs
+
+
+DATA_DIR = getattr(cache_store, "DATA_DIR", Path("data.nosync"))
+add_action_item = cache_store.add_action_item
+add_assistant_note = cache_store.add_assistant_note
+add_carousel_draft = cache_store.add_carousel_draft
+add_collab_target = cache_store.add_collab_target
+add_inspiration = cache_store.add_inspiration
+add_manual_post = cache_store.add_manual_post
+add_screenshot = cache_store.add_screenshot
+add_trend_item = cache_store.add_trend_item
+get_connection = cache_store.get_connection
+get_action_items = cache_store.get_action_items
+get_assistant_notes = cache_store.get_assistant_notes
+get_carousel_drafts = cache_store.get_carousel_drafts
+get_collab_targets = cache_store.get_collab_targets
+get_content_ideas = cache_store.get_content_ideas
+get_daily_metrics = cache_store.get_daily_metrics
+get_inspirations = cache_store.get_inspirations
+get_monetization_signals = cache_store.get_monetization_signals
+get_posts = cache_store.get_posts
+get_profile_metrics = cache_store.get_profile_metrics
+get_screenshots = cache_store.get_screenshots
+get_trend_items = cache_store.get_trend_items
+initialize_database = cache_store.initialize_database
+update_action_status = cache_store.update_action_status
+
+
+def add_content_idea(conn, idea: dict) -> None:
+    """Compatibility layer for older cache.py deployments."""
+    if hasattr(cache_store, "add_content_idea"):
+        cache_store.add_content_idea(conn, idea)
+        return
+    add_action_item(
+        conn,
+        idea.get("title", "Idea DOMO"),
+        "Ideas",
+        idea.get("strategic_reason", idea.get("hook", "")),
+        idea.get("priority", "Media"),
+    )
+
+
+def get_database_mode() -> str:
+    if hasattr(cache_store, "get_database_mode"):
+        return cache_store.get_database_mode()
+    return "SQLite local"
+
+
+def get_supabase_status() -> dict[str, str]:
+    if hasattr(cache_store, "get_supabase_status"):
+        return cache_store.get_supabase_status()
+    return {
+        "mode": "SQLite local",
+        "url": "No diagnosticado",
+        "key": "No diagnosticado",
+        "package": "No diagnosticado",
+        "schema": "No diagnosticado",
+        "message": "cache.py antiguo: sube el cache.py nuevo para ver diagnóstico completo.",
+    }
 
 
 st.set_page_config(
