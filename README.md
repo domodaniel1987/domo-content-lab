@@ -96,6 +96,12 @@ Para conectar Instagram Graph API, revisa:
 docs/INSTAGRAM_SETUP.md
 ```
 
+Para conectar LinkedIn, revisa:
+
+```text
+docs/LINKEDIN_SETUP.md
+```
+
 ## Capturas y avance
 
 En la pestaña `Capturas` puedes:
@@ -127,6 +133,19 @@ La app intenta leerlo y convertirlo en una sugerencia al estilo DOMO:
 - Adaptación estratégica
 
 La idea no es copiar referencias, sino traducirlas a tu mundo: Cuenca, cultura visual LATAM, gráfica popular, dirección de arte y criterio creativo.
+
+## Lectura de métricas
+
+La pestaña `Lectura` convierte los datos en decisiones:
+
+- qué contenido pegó,
+- qué señal está floja,
+- qué pieza conviene repetir,
+- qué Reel convertir en carrusel,
+- qué idea llevar a LinkedIn,
+- qué acción guardar para la semana.
+
+Mientras más captures, links, carruseles y métricas guardes, más contexto tiene el sistema para decidir.
 
 ## Carruseles
 

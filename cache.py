@@ -566,6 +566,26 @@ def get_content_ideas(conn: sqlite3.Connection | SupabaseConnection):
     )
 
 
+def add_content_idea(conn: sqlite3.Connection | SupabaseConnection, idea: dict[str, Any]) -> None:
+    insert_rows(
+        conn,
+        "content_ideas",
+        [
+            {
+                "pillar": idea.get("pillar", "Así pienso yo"),
+                "format": idea.get("format", "Contenido"),
+                "title": idea.get("title", "Idea DOMO"),
+                "hook": idea.get("hook", ""),
+                "share_save_mechanism": idea.get("share_save_mechanism", ""),
+                "cta": idea.get("cta", ""),
+                "strategic_reason": idea.get("strategic_reason", ""),
+                "priority": idea.get("priority", "Media"),
+                "linkedin_adaptation": idea.get("linkedin_adaptation", ""),
+            }
+        ],
+    )
+
+
 def add_screenshot(
     conn: sqlite3.Connection | SupabaseConnection,
     date: str,

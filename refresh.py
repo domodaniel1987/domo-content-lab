@@ -11,6 +11,7 @@ except ImportError:
 
 from cache import get_connection, initialize_database
 from instagram_api import InstagramAPIError, refresh_instagram_to_cache
+from linkedin_api import LinkedInAPIError, refresh_linkedin_to_cache
 
 
 def refresh_instagram_read_only() -> str:
@@ -29,7 +30,11 @@ def refresh_linkedin_read_only() -> str:
     token = os.getenv("LINKEDIN_ACCESS_TOKEN")
     if not token:
         return "LinkedIn: sin token. Se mantienen datos de muestra."
-    return "LinkedIn: token detectado. Conecta aquí la lectura de LinkedIn API cuando tengas permisos."
+    try:
+        result = refresh_linkedin_to_cache()
+    except LinkedInAPIError as exc:
+        return f"LinkedIn: no se pudo actualizar. {exc}"
+    return result["message"]
 
 
 def refresh_all() -> None:

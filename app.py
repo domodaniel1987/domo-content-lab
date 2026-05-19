@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 import json
 import socket
@@ -20,6 +22,7 @@ from cache import (
     add_assistant_note,
     add_carousel_draft,
     add_collab_target,
+    add_content_idea,
     add_inspiration,
     add_manual_post,
     add_screenshot,
@@ -45,6 +48,7 @@ from cache import (
 from carousel import generate_carousel, slides_to_json
 from ideas import generate_ideas
 from instagram_api import InstagramAPIError, get_instagram_status, refresh_instagram_to_cache
+from linkedin_api import LinkedInAPIError, get_linkedin_status, refresh_linkedin_to_cache
 from trend_scout import DEFAULT_TREND_QUERIES, scout_trends, suggest_collabs
 
 
@@ -69,104 +73,232 @@ def inject_styles() -> None:
     st.markdown(
         f"""
         <style>
-        .stApp {{
-            background: {BRAND_COLORS["paper"]};
-            color: {BRAND_COLORS["ink"]};
+        :root {{
+            --md-sys-color-primary: #111111;
+            --md-sys-color-on-primary: #fffaf0;
+            --md-sys-color-primary-container: #F4C430;
+            --md-sys-color-on-primary-container: #111111;
+            --md-sys-color-secondary: #145C9E;
+            --md-sys-color-tertiary: #1B998B;
+            --md-sys-color-error: #E53935;
+            --md-sys-color-background: #F5F0E8;
+            --md-sys-color-surface: #fffaf0;
+            --md-sys-color-surface-container: #F8F2E7;
+            --md-sys-color-surface-container-high: #EFE5D7;
+            --md-sys-color-outline: rgba(17, 17, 17, 0.18);
+            --md-sys-color-outline-variant: rgba(17, 17, 17, 0.10);
+            --md-sys-elevation-1: 0 1px 2px rgba(17,17,17,.16), 0 1px 3px rgba(17,17,17,.10);
+            --md-sys-elevation-2: 0 2px 6px rgba(17,17,17,.18), 0 6px 18px rgba(17,17,17,.08);
+            --md-sys-elevation-3: 0 8px 24px rgba(17,17,17,.16), 0 2px 8px rgba(17,17,17,.10);
+            --domo-radius-sm: 10px;
+            --domo-radius-md: 16px;
+            --domo-radius-lg: 24px;
         }}
-        h1, h2, h3 {{
+        .stApp {{
+            background:
+                radial-gradient(circle at 18% 0%, rgba(244,196,48,.18), transparent 28%),
+                linear-gradient(180deg, #F5F0E8 0%, #FBF7EE 52%, #F5F0E8 100%);
+            color: var(--md-sys-color-primary);
+            font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        }}
+        .block-container {{
+            max-width: 1240px;
+            padding-top: 2.3rem;
+            padding-bottom: 4rem;
+        }}
+        h1 {{
             letter-spacing: 0 !important;
             font-weight: 900 !important;
             text-transform: uppercase;
+            line-height: .96 !important;
+            font-size: clamp(2.4rem, 5.4vw, 5.3rem) !important;
+            max-width: 980px;
+        }}
+        h2, h3 {{
+            letter-spacing: 0 !important;
+            font-weight: 850 !important;
+            line-height: 1.05 !important;
+        }}
+        h2 {{
+            font-size: clamp(1.7rem, 3vw, 2.6rem) !important;
+        }}
+        h3 {{
+            font-size: clamp(1.25rem, 2vw, 1.65rem) !important;
+        }}
+        p, li, label, [data-testid="stMarkdownContainer"] {{
+            line-height: 1.55;
+        }}
+        [data-testid="stHeader"] {{
+            background: rgba(17,17,17,.94);
+            backdrop-filter: blur(14px);
+        }}
+        [data-testid="stToolbar"] {{
+            right: 1rem;
         }}
         [data-testid="stMetric"] {{
-            background: #fffaf0;
-            border: 2px solid {BRAND_COLORS["ink"]};
-            border-radius: 6px;
-            padding: 14px;
-            box-shadow: 5px 5px 0 {BRAND_COLORS["ink"]};
+            background: var(--md-sys-color-surface);
+            border: 1px solid var(--md-sys-color-outline-variant);
+            border-radius: var(--domo-radius-md);
+            padding: 16px 18px;
+            box-shadow: var(--md-sys-elevation-1);
         }}
         [data-testid="stMetric"] * {{
-            color: {BRAND_COLORS["ink"]} !important;
+            color: var(--md-sys-color-primary) !important;
         }}
         [data-testid="stMetricValue"] {{
-            color: {BRAND_COLORS["ink"]} !important;
+            color: var(--md-sys-color-primary) !important;
             font-weight: 900 !important;
+            font-size: clamp(1.8rem, 3vw, 2.7rem) !important;
         }}
         div[data-testid="stDataFrame"] {{
-            border: 2px solid {BRAND_COLORS["ink"]};
+            border: 1px solid var(--md-sys-color-outline-variant);
+            border-radius: var(--domo-radius-md);
+            overflow: hidden;
+            box-shadow: var(--md-sys-elevation-1);
+        }}
+        div[data-testid="stExpander"] {{
+            border: 1px solid var(--md-sys-color-outline-variant);
+            border-radius: var(--domo-radius-md);
+            box-shadow: var(--md-sys-elevation-1);
+            background: var(--md-sys-color-surface);
+        }}
+        input, textarea, [data-baseweb="select"] > div, [data-baseweb="input"] > div {{
+            border-radius: 14px !important;
+        }}
+        .domo-hero {{
+            background:
+                linear-gradient(135deg, rgba(17,17,17,.97) 0%, rgba(17,17,17,.92) 56%, rgba(20,92,158,.92) 100%);
+            color: var(--md-sys-color-on-primary);
+            border-radius: var(--domo-radius-lg);
+            padding: clamp(22px, 4vw, 42px);
+            box-shadow: var(--md-sys-elevation-3);
+            margin-bottom: 28px;
+            position: relative;
+            overflow: hidden;
+        }}
+        .domo-hero:after {{
+            content: "";
+            position: absolute;
+            inset: auto -24px -24px auto;
+            width: 180px;
+            height: 180px;
+            border: 2px solid rgba(244,196,48,.55);
+            transform: rotate(-8deg);
+        }}
+        .domo-hero h1 {{
+            color: var(--md-sys-color-on-primary) !important;
+            margin: 16px 0 16px;
+        }}
+        .domo-hero p {{
+            color: rgba(255,250,240,.86) !important;
+            max-width: 850px;
+            font-size: 1.08rem;
+            margin: 0;
+        }}
+        .domo-hero-grid {{
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 10px;
+            margin-top: 24px;
+            max-width: 880px;
+        }}
+        .domo-hero-chip {{
+            background: rgba(255,250,240,.10);
+            border: 1px solid rgba(255,250,240,.16);
+            border-radius: 999px;
+            color: #fffaf0;
+            padding: 10px 14px;
+            font-weight: 800;
+            text-align: center;
         }}
         .domo-label {{
             display: inline-block;
-            background: {BRAND_COLORS["yellow"]};
-            border: 2px solid {BRAND_COLORS["ink"]};
-            padding: 4px 8px;
+            background: var(--md-sys-color-primary-container);
+            color: var(--md-sys-color-on-primary-container);
+            border: 1px solid rgba(17,17,17,.25);
+            border-radius: 999px;
+            padding: 7px 12px;
             font-weight: 900;
             text-transform: uppercase;
-            transform: rotate(-1deg);
-            margin-bottom: 10px;
+            margin-bottom: 8px;
+            font-size: .82rem;
+            box-shadow: 0 1px 0 rgba(17,17,17,.22);
         }}
         .domo-note {{
-            border-left: 8px solid {BRAND_COLORS["red"]};
-            background: #fffaf0;
-            padding: 14px 16px;
+            border-left: 7px solid var(--md-sys-color-error);
+            background: var(--md-sys-color-surface);
+            border-radius: 0 var(--domo-radius-md) var(--domo-radius-md) 0;
+            padding: 16px 18px;
             font-size: 1rem;
+            box-shadow: var(--md-sys-elevation-1);
         }}
         .domo-action {{
-            background: #fffaf0;
-            border: 2px solid {BRAND_COLORS["ink"]};
-            border-radius: 6px;
-            padding: 14px;
-            min-height: 128px;
-            box-shadow: 4px 4px 0 {BRAND_COLORS["ink"]};
+            background: var(--md-sys-color-surface);
+            border: 1px solid var(--md-sys-color-outline-variant);
+            border-radius: var(--domo-radius-md);
+            padding: 18px;
+            min-height: 168px;
+            box-shadow: var(--md-sys-elevation-1);
+            transition: transform .14s ease, box-shadow .14s ease;
+        }}
+        .domo-action:hover {{
+            transform: translateY(-2px);
+            box-shadow: var(--md-sys-elevation-2);
         }}
         .domo-action strong {{
             display: block;
-            text-transform: uppercase;
-            font-size: 1.02rem;
+            font-size: 1.05rem;
             margin-top: 10px;
-            line-height: 1.15;
+            line-height: 1.2;
         }}
         .domo-action p {{
             margin-bottom: 0;
+            color: rgba(17,17,17,.72);
         }}
         .domo-launch {{
-            background: {BRAND_COLORS["ink"]};
-            color: #fffaf0;
-            border-radius: 6px;
-            border: 2px solid {BRAND_COLORS["ink"]};
-            box-shadow: 6px 6px 0 {BRAND_COLORS["yellow"]};
-            padding: 18px;
-            min-height: 165px;
+            background: var(--md-sys-color-primary);
+            color: var(--md-sys-color-on-primary);
+            border-radius: var(--domo-radius-lg);
+            border: 1px solid rgba(255,250,240,.10);
+            box-shadow: var(--md-sys-elevation-2);
+            padding: 20px;
+            min-height: 175px;
             margin-bottom: 12px;
+            transition: transform .14s ease, box-shadow .14s ease;
+        }}
+        .domo-launch:hover {{
+            transform: translateY(-2px);
+            box-shadow: var(--md-sys-elevation-3);
         }}
         .domo-launch h3 {{
-            color: #fffaf0 !important;
+            color: var(--md-sys-color-on-primary) !important;
             margin: 8px 0;
             font-size: 1.15rem;
         }}
         .domo-launch p {{
-            color: #fffaf0 !important;
+            color: rgba(255,250,240,.82) !important;
             margin: 0;
         }}
         .domo-launch .domo-badge {{
-            background: {BRAND_COLORS["red"]};
-            color: #fffaf0;
+            background: var(--md-sys-color-primary-container);
+            color: var(--md-sys-color-on-primary-container);
         }}
         .domo-pill {{
             display: inline-block;
-            background: {BRAND_COLORS["red"]};
+            background: var(--md-sys-color-error);
             color: white;
-            border: 2px solid {BRAND_COLORS["ink"]};
-            padding: 2px 7px;
+            border-radius: 999px;
+            padding: 4px 9px;
             font-weight: 900;
             margin-right: 5px;
+            font-size: .78rem;
         }}
         .domo-output {{
-            background: #fffaf0;
-            border: 2px solid {BRAND_COLORS["ink"]};
-            border-radius: 6px;
-            box-shadow: 5px 5px 0 {BRAND_COLORS["ink"]};
-            padding: 18px;
+            background: var(--md-sys-color-surface);
+            border: 1px solid var(--md-sys-color-outline-variant);
+            border-radius: var(--domo-radius-lg);
+            box-shadow: var(--md-sys-elevation-2);
+            padding: 22px;
             margin: 18px 0;
         }}
         .domo-output-top {{
@@ -178,29 +310,31 @@ def inject_styles() -> None:
         }}
         .domo-badge {{
             display: inline-block;
-            border: 2px solid {BRAND_COLORS["ink"]};
-            background: {BRAND_COLORS["yellow"]};
-            color: {BRAND_COLORS["ink"]};
-            padding: 3px 8px;
+            border: 1px solid rgba(17,17,17,.18);
+            background: var(--md-sys-color-primary-container);
+            color: var(--md-sys-color-on-primary-container);
+            border-radius: 999px;
+            padding: 5px 10px;
             font-weight: 900;
             text-transform: uppercase;
             font-size: 0.82rem;
         }}
         .domo-slide {{
-            background: {BRAND_COLORS["ink"]};
-            color: #fffaf0;
-            border-radius: 6px;
-            padding: 18px;
+            background:
+                linear-gradient(160deg, #111111 0%, #202124 68%, #145C9E 100%);
+            color: var(--md-sys-color-on-primary);
+            border-radius: var(--domo-radius-lg);
+            padding: 22px;
             min-height: 230px;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
-            border: 3px solid {BRAND_COLORS["ink"]};
-            box-shadow: 6px 6px 0 {BRAND_COLORS["red"]};
+            border: 1px solid rgba(255,250,240,.10);
+            box-shadow: var(--md-sys-elevation-3);
             margin-bottom: 16px;
         }}
         .domo-slide-number {{
-            color: {BRAND_COLORS["yellow"]};
+            color: var(--md-sys-color-primary-container);
             font-weight: 900;
             text-transform: uppercase;
             font-size: 0.86rem;
@@ -220,54 +354,170 @@ def inject_styles() -> None:
             font-size: 0.96rem;
         }}
         .domo-slide-detail strong {{
-            color: {BRAND_COLORS["yellow"]};
+            color: var(--md-sys-color-primary-container);
+        }}
+        .domo-step {{
+            background: var(--md-sys-color-surface-container);
+            border: 1px solid var(--md-sys-color-outline-variant);
+            border-radius: var(--domo-radius-md);
+            padding: 18px;
+            min-height: 150px;
+            box-shadow: var(--md-sys-elevation-1);
+        }}
+        .domo-step-number {{
+            display: inline-block;
+            background: var(--md-sys-color-primary);
+            color: var(--md-sys-color-on-primary);
+            border-radius: 999px;
+            min-width: 28px;
+            height: 28px;
+            text-align: center;
+            line-height: 28px;
+            font-weight: 900;
+            margin-bottom: 10px;
+        }}
+        .domo-step h3 {{
+            font-size: 1rem;
+            margin: 2px 0 8px;
+        }}
+        .domo-read {{
+            background: var(--md-sys-color-surface);
+            border: 1px solid var(--md-sys-color-outline-variant);
+            border-radius: var(--domo-radius-lg);
+            padding: 22px;
+            box-shadow: var(--md-sys-elevation-2);
+            min-height: 170px;
+        }}
+        .domo-read strong {{
+            display: block;
+            margin-bottom: 8px;
+            font-size: 1.05rem;
+        }}
+        .domo-callout {{
+            background: var(--md-sys-color-primary-container);
+            border: 1px solid rgba(17,17,17,.18);
+            border-radius: var(--domo-radius-lg);
+            box-shadow: var(--md-sys-elevation-2);
+            padding: 20px;
+            margin: 12px 0 22px;
+            font-weight: 800;
+        }}
+        .domo-small {{
+            font-size: 0.92rem;
+            opacity: 0.86;
+        }}
+        .domo-section {{
+            background: rgba(255,250,240,.72);
+            border: 1px solid var(--md-sys-color-outline-variant);
+            border-radius: var(--domo-radius-lg);
+            padding: clamp(16px, 3vw, 26px);
+            box-shadow: var(--md-sys-elevation-1);
+            margin: 18px 0;
         }}
         section[data-testid="stSidebar"] {{
-            background: #fffaf0;
-            border-right: 2px solid {BRAND_COLORS["ink"]};
+            background: rgba(255,250,240,.96);
+            border-right: 1px solid var(--md-sys-color-outline-variant);
+            box-shadow: var(--md-sys-elevation-2);
         }}
         section[data-testid="stSidebar"] * {{
-            color: {BRAND_COLORS["ink"]} !important;
+            color: var(--md-sys-color-primary) !important;
         }}
         section[data-testid="stSidebar"] code {{
-            color: #1B998B !important;
-            background: #111111 !important;
-            border-radius: 6px;
+            color: var(--md-sys-color-tertiary) !important;
+            background: var(--md-sys-color-primary) !important;
+            border-radius: 12px;
             padding: 8px !important;
         }}
+        section[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] h3 {{
+            font-size: .92rem !important;
+            text-transform: uppercase;
+            letter-spacing: .02em !important;
+        }}
         div[role="radiogroup"] label {{
-            color: {BRAND_COLORS["ink"]} !important;
-            font-weight: 800 !important;
+            color: var(--md-sys-color-primary) !important;
+            font-weight: 760 !important;
             opacity: 1 !important;
+            border-radius: 999px !important;
+            padding: 8px 10px !important;
+            min-height: 42px;
         }}
         div[role="radiogroup"] p {{
-            color: {BRAND_COLORS["ink"]} !important;
+            color: var(--md-sys-color-primary) !important;
         }}
         .stButton > button {{
-            background: {BRAND_COLORS["ink"]} !important;
-            color: #fffaf0 !important;
-            border: 2px solid {BRAND_COLORS["ink"]} !important;
-            border-radius: 6px !important;
-            font-weight: 900 !important;
+            background: var(--md-sys-color-primary) !important;
+            color: var(--md-sys-color-on-primary) !important;
+            border: 0 !important;
+            border-radius: 999px !important;
+            font-weight: 850 !important;
+            min-height: 42px;
+            padding: 0 18px !important;
+            box-shadow: var(--md-sys-elevation-1);
+            transition: transform .12s ease, box-shadow .12s ease, background .12s ease;
+        }}
+        .stButton > button:hover {{
+            transform: translateY(-1px);
+            box-shadow: var(--md-sys-elevation-2);
+            background: #2B2B2B !important;
         }}
         .stButton > button * {{
-            color: #fffaf0 !important;
+            color: var(--md-sys-color-on-primary) !important;
+        }}
+        button[kind="primary"], .stDownloadButton > button {{
+            background: var(--md-sys-color-secondary) !important;
+            color: white !important;
+        }}
+        .stTabs [data-baseweb="tab-list"] {{
+            gap: 8px;
+            background: var(--md-sys-color-surface-container-high);
+            padding: 7px;
+            border-radius: 999px;
+            width: fit-content;
+        }}
+        .stTabs [data-baseweb="tab"] {{
+            border-radius: 999px;
+            padding: 8px 16px;
+            font-weight: 800;
+        }}
+        .stTabs [aria-selected="true"] {{
+            background: var(--md-sys-color-surface);
+            box-shadow: var(--md-sys-elevation-1);
         }}
         a {{
-            color: {BRAND_COLORS["blue"]} !important;
+            color: var(--md-sys-color-secondary) !important;
             font-weight: 800;
         }}
         @media (max-width: 760px) {{
+            .block-container {{
+                padding-left: 1rem;
+                padding-right: 1rem;
+                padding-top: 1.3rem;
+            }}
             h1 {{
-                font-size: 2rem !important;
+                font-size: 2.35rem !important;
                 line-height: 1.02 !important;
             }}
             [data-testid="column"] {{
                 width: 100% !important;
                 flex: 1 1 100% !important;
             }}
-            .domo-action {{
+            .domo-action,
+            .domo-step,
+            .domo-read,
+            .domo-launch {{
                 min-height: auto;
+            }}
+            .domo-hero {{
+                border-radius: 18px;
+                padding: 22px;
+            }}
+            .domo-hero-grid {{
+                grid-template-columns: 1fr;
+            }}
+            .stTabs [data-baseweb="tab-list"] {{
+                width: 100%;
+                overflow-x: auto;
+                border-radius: 16px;
             }}
         }}
         </style>
@@ -316,6 +566,98 @@ def score_health(value: float, target: float) -> str:
     return "Necesita trabajo"
 
 
+def safe_mean(frame: pd.DataFrame, column: str) -> float:
+    if frame.empty or column not in frame.columns:
+        return 0.0
+    return float(frame[column].fillna(0).mean())
+
+
+def with_strategic_score(posts: pd.DataFrame) -> pd.DataFrame:
+    if posts.empty:
+        return posts.copy()
+    scored = posts.copy()
+    for column in ["share_rate", "save_rate", "quality_comment_rate", "profile_visit_rate"]:
+        if column not in scored.columns:
+            scored[column] = 0
+    scored["strategic_score"] = (
+        scored["share_rate"] * 2.0
+        + scored["save_rate"] * 1.8
+        + scored["quality_comment_rate"] * 1.6
+        + scored["profile_visit_rate"] * 1.4
+    ).round(2)
+    return scored
+
+
+def best_group(posts: pd.DataFrame, group: str, metric: str) -> tuple[str, float]:
+    if posts.empty or group not in posts.columns or metric not in posts.columns:
+        return "Sin datos", 0.0
+    grouped = posts.groupby(group, as_index=False)[metric].mean().sort_values(metric, ascending=False)
+    if grouped.empty:
+        return "Sin datos", 0.0
+    row = grouped.iloc[0]
+    return str(row[group]), float(row[metric])
+
+
+def build_metric_reading(posts: pd.DataFrame) -> dict[str, str | float | pd.DataFrame]:
+    scored = with_strategic_score(posts)
+    if scored.empty:
+        return {
+            "headline": "Todavía falta data para leer patrones.",
+            "what_worked": "Sube capturas o conecta APIs para empezar a comparar.",
+            "what_failed": "Sin historial no conviene sacar conclusiones.",
+            "next_move": "Registra 5 contenidos recientes y vuelve a esta pantalla.",
+            "best_posts": scored,
+            "weak_posts": scored,
+        }
+
+    avg_share = safe_mean(scored, "share_rate")
+    avg_save = safe_mean(scored, "save_rate")
+    avg_quality = safe_mean(scored, "quality_comment_rate")
+    avg_profile = safe_mean(scored, "profile_visit_rate")
+    best_format, best_format_value = best_group(scored, "format", "strategic_score")
+    best_pillar, best_pillar_value = best_group(scored, "pillar", "strategic_score")
+    top = scored.sort_values("strategic_score", ascending=False).head(5)
+    weak = scored.sort_values("strategic_score", ascending=True).head(5)
+    top_title = str(top.iloc[0]["title"]) if not top.empty else "Sin ganador claro"
+
+    weak_signals = []
+    if avg_share < 1.8:
+        weak_signals.append("shares")
+    if avg_save < 2.4:
+        weak_signals.append("guardados")
+    if avg_quality < 1.2:
+        weak_signals.append("comentarios de calidad")
+    if avg_profile < 3.0:
+        weak_signals.append("visitas al perfil")
+
+    if weak_signals:
+        what_failed = "La señal débil principal está en: " + ", ".join(weak_signals) + "."
+    else:
+        what_failed = "No hay una señal crítica rota; el siguiente paso es repetir lo que funciona con más intención."
+
+    if avg_save < avg_share:
+        next_move = "Convierte el contenido ganador en carrusel guardable con checklist, frases o marco de criterio."
+    elif avg_share < avg_save:
+        next_move = "Convierte el contenido útil en una pieza más identitaria: postura fuerte, calle, cultura visual LATAM y frase compartible."
+    elif avg_profile < 3.0:
+        next_move = "Agrega cierre comercial claro: workshop, consultoría creativa o colaboración con marcas."
+    else:
+        next_move = "Repite el pilar ganador en dos formatos: Reel para alcance y carrusel/documento para guardados."
+
+    return {
+        "headline": f"El sistema está detectando más fuerza en {best_pillar} y formato {best_format}.",
+        "what_worked": f"El contenido con mejor señal es: {top_title}. Puntuación estratégica: {float(top.iloc[0]['strategic_score']):.2f}.",
+        "what_failed": what_failed,
+        "next_move": next_move,
+        "best_format": best_format,
+        "best_format_value": best_format_value,
+        "best_pillar": best_pillar,
+        "best_pillar_value": best_pillar_value,
+        "best_posts": top,
+        "weak_posts": weak,
+    }
+
+
 def load_data():
     initialize_database()
     conn = get_connection()
@@ -353,13 +695,21 @@ def metric_card(label: str, value: str, help_text: str = "") -> None:
 
 
 def render_header() -> None:
-    st.markdown('<span class="domo-label">DOMO Content Lab</span>', unsafe_allow_html=True)
-    st.title("Asistente de crecimiento visual")
     st.markdown(
         """
-        <div class="domo-note">
-        Lectura estratégica para Instagram y LinkedIn: menos vanidad, más señales para decidir
-        qué publicar, qué repetir y qué convertir en workshop, consultoría o colaboración.
+        <div class="domo-hero">
+            <span class="domo-label">DOMO Content Lab</span>
+            <h1>Asistente de crecimiento visual</h1>
+            <p>
+            Tu centro de decisiones para Instagram y LinkedIn: entiende qué pegó,
+            qué corregir y qué contenido crear para mover shares, guardados,
+            comentarios buenos, perfil y oportunidades comerciales.
+            </p>
+            <div class="domo-hero-grid">
+                <div class="domo-hero-chip">Leer métricas</div>
+                <div class="domo-hero-chip">Crear contenido</div>
+                <div class="domo-hero-chip">Guardar aprendizaje</div>
+            </div>
         </div>
         """,
         unsafe_allow_html=True,
@@ -393,12 +743,44 @@ def render_mobile_hint() -> None:
 
 
 def render_command_center(posts: pd.DataFrame, action_items: pd.DataFrame) -> None:
-    st.subheader("Elige tu siguiente movimiento")
-    avg_share = posts["share_rate"].mean()
-    avg_save = posts["save_rate"].mean()
-    avg_comments = posts["quality_comment_rate"].mean()
+    st.subheader("Centro de acción")
+    reading = build_metric_reading(posts)
+    avg_share = safe_mean(posts, "share_rate")
+    avg_save = safe_mean(posts, "save_rate")
+    avg_comments = safe_mean(posts, "quality_comment_rate")
+
+    st.markdown(
+        f"""
+        <div class="domo-callout">
+            Hoy: {reading["next_move"]}
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    st.markdown("#### Flujo simple")
+    workflow = [
+        ("1", "Leer", "Revisa qué está funcionando y qué señal está floja."),
+        ("2", "Decidir", "Elige una idea según shares, saves, comentarios o leads."),
+        ("3", "Crear", "Genera carrusel, post de LinkedIn o guion de Reel."),
+        ("4", "Guardar", "Sube métricas/capturas para que el sistema aprenda."),
+    ]
+    cols = st.columns(4)
+    for col, (number, title, text) in zip(cols, workflow):
+        with col:
+            st.markdown(
+                f"""
+                <div class="domo-step">
+                    <span class="domo-step-number">{number}</span>
+                    <h3>{title}</h3>
+                    <p>{text}</p>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
 
     launchers = [
+        ("Lectura", "Qué pasó", "Diagnóstico de métricas: pegó, no pegó y próximo movimiento."),
         ("Carruseles", "Frases por imagen", "Convierte una idea o link en slides listos para diseñar."),
         ("Asistente", "Estrategia rápida", "Pregúntale qué publicar, repetir o convertir en negocio."),
         ("Inspiración", "Analizar link", "Pega algo que viste y tradúcelo a estilo DOMO."),
@@ -446,7 +828,16 @@ def render_command_center(posts: pd.DataFrame, action_items: pd.DataFrame) -> No
     ]
 
     st.subheader("Qué hacemos hoy")
-    cols = st.columns(3)
+    suggested.insert(
+        0,
+        {
+            "title": str(reading["next_move"]),
+            "area": "Lectura",
+            "reason": str(reading["headline"]),
+            "priority": "Alta",
+        },
+    )
+    cols = st.columns(4)
     for col, item in zip(cols, suggested):
         with col:
             st.markdown(
@@ -524,6 +915,143 @@ def render_summary(posts: pd.DataFrame, profile: pd.DataFrame) -> None:
     st.dataframe(diagnosis, hide_index=True, use_container_width=True)
 
 
+def render_growth_reading(posts: pd.DataFrame, profile: pd.DataFrame) -> None:
+    st.subheader("Lectura de métricas")
+    st.write("Aquí la app traduce los números en decisiones: qué pegó, qué no pegó y qué hacer distinto.")
+
+    reading = build_metric_reading(posts)
+    cols = st.columns(3)
+    with cols[0]:
+        st.markdown(
+            f"""
+            <div class="domo-read">
+                <strong>Qué está pasando</strong>
+                <p>{reading["headline"]}</p>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+    with cols[1]:
+        st.markdown(
+            f"""
+            <div class="domo-read">
+                <strong>Qué pegó</strong>
+                <p>{reading["what_worked"]}</p>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+    with cols[2]:
+        st.markdown(
+            f"""
+            <div class="domo-read">
+                <strong>Qué corregir</strong>
+                <p>{reading["what_failed"]}</p>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+    st.markdown(
+        f"""
+        <div class="domo-callout">
+            Próximo movimiento recomendado: {reading["next_move"]}
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    col_a, col_b, col_c, col_d = st.columns(4)
+    col_a.metric("Share rate", as_percent(safe_mean(posts, "share_rate")))
+    col_b.metric("Save rate", as_percent(safe_mean(posts, "save_rate")))
+    col_c.metric("Comentarios calidad", as_percent(safe_mean(posts, "quality_comment_rate")))
+    col_d.metric("Visitas perfil", as_percent(safe_mean(posts, "profile_visit_rate")))
+
+    st.markdown("#### Decisiones para crear contenido")
+    decisions = [
+        {
+            "decision": "Repetir",
+            "when": "Si el post tiene score alto",
+            "action": "Haz una secuela: mismo criterio, nuevo ejemplo visual.",
+        },
+        {
+            "decision": "Convertir",
+            "when": "Si un Reel tiene atención pero pocos guardados",
+            "action": "Haz carrusel con frases, checklist o marco de análisis.",
+        },
+        {
+            "decision": "Corregir",
+            "when": "Si tiene likes pero no comentarios ni visitas",
+            "action": "Cierra con una pregunta específica o una invitación a workshop/collab.",
+        },
+        {
+            "decision": "Llevar a LinkedIn",
+            "when": "Si el contenido demuestra criterio profesional",
+            "action": "Transforma la idea en mini ensayo o documento con caso aplicado.",
+        },
+    ]
+    st.dataframe(pd.DataFrame(decisions), hide_index=True, use_container_width=True)
+
+    st.markdown("#### Ganadores")
+    best_posts = reading["best_posts"]
+    if isinstance(best_posts, pd.DataFrame) and not best_posts.empty:
+        st.dataframe(
+            best_posts[
+                [
+                    "date",
+                    "platform",
+                    "title",
+                    "pillar",
+                    "format",
+                    "share_rate",
+                    "save_rate",
+                    "quality_comment_rate",
+                    "profile_visit_rate",
+                    "strategic_score",
+                ]
+            ],
+            hide_index=True,
+            use_container_width=True,
+        )
+    else:
+        st.info("Todavía no hay suficientes posts para detectar ganadores.")
+
+    st.markdown("#### Piezas para revisar")
+    weak_posts = reading["weak_posts"]
+    if isinstance(weak_posts, pd.DataFrame) and not weak_posts.empty:
+        st.dataframe(
+            weak_posts[
+                [
+                    "date",
+                    "platform",
+                    "title",
+                    "pillar",
+                    "format",
+                    "share_rate",
+                    "save_rate",
+                    "quality_comment_rate",
+                    "profile_visit_rate",
+                    "strategic_score",
+                ]
+            ],
+            hide_index=True,
+            use_container_width=True,
+        )
+
+    st.markdown("#### Guardar como acción")
+    if st.button("Guardar próximo movimiento", type="primary"):
+        conn = get_connection()
+        add_action_item(
+            conn,
+            str(reading["next_move"]),
+            "Lectura de métricas",
+            str(reading["headline"]),
+            "Alta",
+        )
+        conn.close()
+        st.success("Acción guardada en Inicio.")
+
+
 def render_trends(posts: pd.DataFrame, daily: pd.DataFrame) -> None:
     st.subheader("Tendencias por día")
     fig = px.line(
@@ -576,12 +1104,7 @@ def render_posts(posts: pd.DataFrame) -> None:
         & posts["format"].isin(format_filter)
     ].copy()
 
-    filtered["strategic_score"] = (
-        filtered["share_rate"] * 2.0
-        + filtered["save_rate"] * 1.8
-        + filtered["quality_comment_rate"] * 1.6
-        + filtered["profile_visit_rate"] * 1.4
-    ).round(2)
+    filtered = with_strategic_score(filtered)
     filtered = filtered.sort_values("strategic_score", ascending=False)
 
     st.dataframe(
@@ -1023,6 +1546,7 @@ def render_admin() -> None:
     st.write("Panel de salud del sistema. Aquí ves qué está listo y qué falta para operación 100%.")
     is_cloud = bool(os.getenv("HOSTNAME") or os.getenv("STREAMLIT_SERVER_HEADLESS"))
     instagram_ready = bool(get_secret("INSTAGRAM_ACCESS_TOKEN", "") and get_secret("INSTAGRAM_BUSINESS_ACCOUNT_ID", ""))
+    linkedin_ready = bool(get_secret("LINKEDIN_ACCESS_TOKEN", ""))
     supabase_status = get_supabase_status()
     database_mode = supabase_status["mode"]
     persistent_db = database_mode == "Supabase"
@@ -1031,6 +1555,7 @@ def render_admin() -> None:
             {"Área": "App online", "Estado": "Lista" if is_cloud else "Local", "Para qué sirve": "Abrir desde celular/oficina."},
             {"Área": "IA", "Estado": "Lista" if has_ai_key() else "Falta OPENAI_API_KEY", "Para qué sirve": "Ideas, carruseles, links, asistente."},
             {"Área": "Instagram API", "Estado": "Configurada" if instagram_ready else "Pendiente", "Para qué sirve": "Actualizar métricas casi automático."},
+            {"Área": "LinkedIn API", "Estado": "Lista para probar" if linkedin_ready else "Opcional/manual", "Para qué sirve": "Traer señales de autoridad y consultoría."},
             {"Área": "Datos persistentes", "Estado": "Supabase conectado" if persistent_db else database_mode, "Para qué sirve": "No perder historial al reiniciar."},
             {"Área": "Capturas", "Estado": "Funciona manual", "Para qué sirve": "Subir screenshots y registrar métricas."},
             {"Área": "Carruseles", "Estado": "Listo", "Para qué sirve": "Generar frases por imagen y guion."},
@@ -1101,19 +1626,67 @@ def render_admin() -> None:
                             + ", ".join(result["unsupported_metrics"][:8])
                         )
 
+    st.markdown("#### LinkedIn API")
+    linkedin_status = get_linkedin_status(check_api=False)
+    st.dataframe(
+        pd.DataFrame(
+            [
+                {"Punto": "Access token", "Estado": linkedin_status["token"]},
+                {"Punto": "API version", "Estado": linkedin_status["version"]},
+                {"Punto": "API", "Estado": linkedin_status["api"]},
+            ]
+        ),
+        hide_index=True,
+        use_container_width=True,
+    )
+    col_c, col_d = st.columns(2)
+    with col_c:
+        if st.button("Probar conexión LinkedIn"):
+            checked = get_linkedin_status(check_api=True)
+            if checked["ready"]:
+                st.success(checked["message"])
+                profile = checked.get("profile", {})
+                if profile:
+                    st.write(
+                        {
+                            "nombre": profile.get("name", ""),
+                            "email": profile.get("email", ""),
+                        }
+                    )
+            else:
+                st.warning(checked["message"])
+    with col_d:
+        if st.button("Actualizar métricas de LinkedIn", type="primary"):
+            with st.spinner("Leyendo LinkedIn y guardando en Supabase..."):
+                try:
+                    result = refresh_linkedin_to_cache()
+                except LinkedInAPIError as exc:
+                    st.error(f"No se pudo actualizar LinkedIn: {exc}")
+                else:
+                    st.success(result["message"])
+                    st.write(result["analytics"])
+                    if result["unsupported_metrics"]:
+                        st.caption(
+                            "LinkedIn no entregó estas métricas con el permiso actual: "
+                            + ", ".join(result["unsupported_metrics"][:8])
+                        )
+
     completed = 0
     completed += 1 if is_cloud else 0
     completed += 1 if has_ai_key() else 0
     completed += 1 if instagram_ready else 0
+    completed += 1 if linkedin_ready else 0
     completed += 1 if persistent_db else 0
     completed += 1
     completed += 1
-    readiness = int((completed / 6) * 100)
+    readiness = int((completed / 7) * 100)
     st.metric("Nivel operativo", f"{readiness}%")
 
     st.markdown("#### Qué significa")
-    if readiness >= 80:
-        st.success("La app ya está lista para uso diario. Lo pendiente es conectar datos reales/persistentes.")
+    if readiness >= 100:
+        st.success("La base operativa está lista: IA, memoria, Instagram y lectura estratégica funcionando.")
+    elif readiness >= 80:
+        st.success("La app ya está lista para uso diario. Quedan integraciones opcionales para ampliar el sistema.")
     else:
         st.warning("La app funciona, pero todavía falta conectar datos automáticos o persistencia para llamarla 100% producción.")
 
@@ -1122,7 +1695,8 @@ def render_admin() -> None:
         "1. Usar la app diariamente con carruseles, ideas e inspiración.\n\n"
         "2. Conectar Supabase para que el historial no dependa de archivos temporales de Streamlit.\n\n"
         "3. Conectar Instagram Graph API oficial para traer métricas reales.\n\n"
-        "4. Automatizar refresh diario/semanal de métricas y trends."
+        "4. Conectar LinkedIn para medir autoridad, visitas e interés de consultoría.\n\n"
+        "5. Automatizar refresh diario/semanal de métricas y trends."
     )
 
 
@@ -1159,7 +1733,7 @@ def render_ideas(posts: pd.DataFrame, stored_ideas: pd.DataFrame) -> None:
 
     ideas_to_show = st.session_state.get("generated_ideas", [])
     if ideas_to_show:
-        for idea in ideas_to_show:
+        for index, idea in enumerate(ideas_to_show):
             with st.container(border=True):
                 st.markdown(f"### {idea['title']}")
                 cols = st.columns([1, 1, 1])
@@ -1171,6 +1745,20 @@ def render_ideas(posts: pd.DataFrame, stored_ideas: pd.DataFrame) -> None:
                 st.markdown(f"**CTA:** {idea['cta']}")
                 st.markdown(f"**Razón estratégica:** {idea['strategic_reason']}")
                 st.markdown(f"**Adaptación LinkedIn:** {idea['linkedin_adaptation']}")
+                col_save, col_make = st.columns(2)
+                with col_save:
+                    if st.button("Guardar idea", key=f"save_idea_{index}_{idea['title']}"):
+                        conn = get_connection()
+                        add_content_idea(conn, idea)
+                        conn.close()
+                        st.success("Idea guardada en memoria.")
+                with col_make:
+                    if st.button("Convertir en carrusel", key=f"carousel_from_idea_{index}_{idea['title']}"):
+                        st.session_state["page"] = "Carruseles"
+                        st.session_state["carousel_seed"] = (
+                            f"{idea['title']}\n{idea['hook']}\n{idea['share_save_mechanism']}\n{idea['strategic_reason']}"
+                        )
+                        st.rerun()
     else:
         st.dataframe(stored_ideas, hide_index=True, use_container_width=True)
 
@@ -1187,9 +1775,11 @@ def render_carousels(posts: pd.DataFrame, inspirations: pd.DataFrame, carousels:
     seed = ""
     selected_url = ""
     if source == "Escribir una idea nueva":
+        default_seed = st.session_state.pop("carousel_seed", "")
         seed = st.text_area(
             "Idea o frase inicial",
             placeholder="Ej: Pinterest no entiende tu barrio / Cuenca no es postal, es sistema visual",
+            value=default_seed,
         )
     else:
         selected = inspirations[inspirations["title"].fillna("Link guardado") == source].head(1)
@@ -1309,6 +1899,7 @@ def main() -> None:
 
     nav_options = [
         "Inicio",
+        "Lectura",
         "Asistente",
         "Ideas",
         "Carruseles",
@@ -1331,6 +1922,8 @@ def main() -> None:
 
     if page == "Inicio":
         render_command_center(posts, action_items)
+    elif page == "Lectura":
+        render_growth_reading(posts, profile)
     elif page == "Asistente":
         render_assistant(posts, assistant_notes)
     elif page == "Ideas":
@@ -1352,6 +1945,7 @@ def main() -> None:
     else:
         tabs = st.tabs([
             "Resumen",
+            "Lectura",
             "Tendencias",
             "Audiencia",
             "Posts",
@@ -1362,14 +1956,16 @@ def main() -> None:
         with tabs[0]:
             render_summary(posts, profile)
         with tabs[1]:
-            render_trends(posts, daily)
+            render_growth_reading(posts, profile)
         with tabs[2]:
-            render_audience(profile)
+            render_trends(posts, daily)
         with tabs[3]:
-            render_posts(posts)
+            render_audience(profile)
         with tabs[4]:
-            render_publish_time(posts)
+            render_posts(posts)
         with tabs[5]:
+            render_publish_time(posts)
+        with tabs[6]:
             render_monetization(monetization, posts)
 
     st.caption(f"Última lectura local: {datetime.now().strftime('%Y-%m-%d %H:%M')}. Solo lectura. No publica, no envía mensajes.")
