@@ -1142,19 +1142,6 @@ def inject_styles() -> None:
             0%, 100% {{ transform: translateY(0) scale(1); text-shadow: 0 0 0 rgba(207,255,79,0); }}
             50% {{ transform: translateY(-3px) scale(1.035); text-shadow: 0 0 24px rgba(207,255,79,.22); }}
         }}
-        .stApp::before {{
-            content: "";
-            position: fixed;
-            z-index: 999999;
-            top: 0;
-            left: 0;
-            width: 38vw;
-            height: 4px;
-            border-radius: 999px;
-            background: linear-gradient(90deg, #CFFF4F, #8FE7FF, #FF84D6);
-            animation: domo-loader 2.4s cubic-bezier(.65,0,.35,1) infinite;
-            pointer-events: none;
-        }}
         .main .block-container {{
             padding-top: clamp(1.35rem, 3vw, 2.2rem) !important;
         }}
@@ -1550,8 +1537,8 @@ def inject_styles() -> None:
         .domo-floating-bot {{
             position: fixed;
             right: 22px;
-            bottom: 82px;
-            z-index: 9999;
+            top: 74px;
+            z-index: 999999;
             width: min(310px, calc(100vw - 44px));
             padding: 14px 16px;
             border-radius: 28px;
@@ -1604,6 +1591,365 @@ def inject_styles() -> None:
         .domo-day.is-hot span {{
             color: #07100D !important;
         }}
+        .domo-production-board {{
+            margin: 22px 0 28px;
+            max-width: 1180px;
+            border: 1px solid rgba(243,247,234,.12);
+            border-radius: 34px;
+            background: #070A08;
+            box-shadow: var(--md-sys-elevation-3);
+            overflow: hidden;
+        }}
+        .domo-board-top {{
+            display: grid;
+            grid-template-columns: 150px 1fr 210px;
+            align-items: center;
+            gap: 14px;
+            padding: 20px 24px;
+            border-bottom: 1px solid rgba(243,247,234,.10);
+        }}
+        .domo-board-brand {{
+            color: #CFFF4F !important;
+            font-size: 1.45rem;
+            font-weight: 950;
+            letter-spacing: 0;
+        }}
+        .domo-board-title {{
+            color: #F6FAEF !important;
+            font-size: clamp(1.5rem, 3vw, 2.4rem);
+            font-weight: 920;
+            text-align: center;
+            line-height: 1;
+        }}
+        .domo-board-tools {{
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+        }}
+        .domo-tool-dot {{
+            width: 42px;
+            height: 42px;
+            border-radius: 999px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: #F6FAEF;
+            color: #07100D !important;
+            font-weight: 900;
+        }}
+        .domo-board-grid {{
+            display: grid;
+            grid-template-columns: 92px minmax(0, 1fr) 320px;
+            min-height: 620px;
+        }}
+        .domo-board-rail {{
+            padding: 24px 18px;
+            border-right: 1px solid rgba(243,247,234,.10);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+            background: #070A08;
+        }}
+        .domo-rail-icon {{
+            width: 48px;
+            height: 48px;
+            border-radius: 999px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: #F6FAEF;
+            color: #07100D !important;
+            font-weight: 950;
+            font-size: .78rem;
+            box-shadow: 0 10px 28px rgba(0,0,0,.24);
+            animation: domo-number-pop .62s cubic-bezier(.34,1.56,.64,1) both;
+        }}
+        .domo-rail-icon.is-active {{
+            background: #CFFF4F;
+            box-shadow: 0 0 30px rgba(207,255,79,.48);
+        }}
+        .domo-rail-spacer {{
+            flex: 1;
+        }}
+        .domo-board-main {{
+            padding: 24px;
+            border-right: 1px solid rgba(243,247,234,.10);
+        }}
+        .domo-board-side {{
+            padding: 24px 18px;
+            background: #060806;
+        }}
+        .domo-stat-row {{
+            display: grid;
+            grid-template-columns: 1.45fr .9fr .9fr;
+            gap: 16px;
+            margin-bottom: 22px;
+        }}
+        .domo-stat-card {{
+            min-height: 205px;
+            border-radius: 34px;
+            padding: 22px;
+            background: #202320;
+            border: 1px solid rgba(243,247,234,.08);
+            animation: domo-stagger-in .65s cubic-bezier(.34,1.56,.64,1) both;
+        }}
+        .domo-stat-card.is-primary {{
+            background: #CFFF4F;
+        }}
+        .domo-stat-card.is-light {{
+            background: #F6FAEF;
+        }}
+        .domo-stat-card.is-primary *,
+        .domo-stat-card.is-light * {{
+            color: #07100D !important;
+        }}
+        .domo-stat-card small {{
+            display: block;
+            color: rgba(243,247,234,.64) !important;
+            font-weight: 800;
+            margin-top: 10px;
+        }}
+        .domo-stat-card h3 {{
+            margin: 0;
+            font-size: clamp(1.28rem, 2vw, 1.75rem);
+            line-height: 1.08;
+            color: #F6FAEF !important;
+        }}
+        .domo-stat-value {{
+            display: block;
+            margin: 28px 0 4px;
+            font-size: clamp(2.2rem, 5vw, 4.8rem);
+            line-height: .82;
+            color: #F6FAEF !important;
+            font-weight: 950;
+            animation: domo-count-glow 3s ease-in-out infinite;
+        }}
+        .domo-schedule {{
+            margin: 18px 0 26px;
+        }}
+        .domo-schedule-title {{
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            color: #F6FAEF !important;
+            font-size: 1.45rem;
+            font-weight: 900;
+            margin-bottom: 14px;
+        }}
+        .domo-schedule-row {{
+            display: flex;
+            align-items: center;
+            gap: 0;
+            overflow-x: auto;
+            padding-bottom: 8px;
+        }}
+        .domo-schedule-day {{
+            min-width: 74px;
+            height: 74px;
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin-right: -6px;
+            border-radius: 999px;
+            background: #F6FAEF;
+            color: #07100D !important;
+            border: 2px solid #070A08;
+            animation: domo-number-pop .68s cubic-bezier(.34,1.56,.64,1) both;
+        }}
+        .domo-schedule-day.is-hot {{
+            min-width: 220px;
+            border-radius: 999px;
+            background: #CFFF4F;
+        }}
+        .domo-schedule-day.is-muted {{
+            background: #303330;
+            color: #F6FAEF !important;
+        }}
+        .domo-schedule-day strong,
+        .domo-schedule-day span {{
+            color: inherit !important;
+        }}
+        .domo-schedule-day strong {{
+            font-size: 1.55rem;
+            line-height: 1;
+        }}
+        .domo-schedule-day span {{
+            font-size: .7rem;
+            font-weight: 800;
+        }}
+        .domo-work-grid {{
+            display: grid;
+            grid-template-columns: 1fr 1.05fr;
+            gap: 16px;
+        }}
+        .domo-worker-card,
+        .domo-task-pill,
+        .domo-side-card {{
+            border-radius: 30px;
+            padding: 18px;
+            background: #1A1D1A;
+            border: 1px solid rgba(243,247,234,.10);
+            color: #F6FAEF !important;
+            animation: domo-stagger-in .65s cubic-bezier(.34,1.56,.64,1) both;
+        }}
+        .domo-worker-card.is-light {{
+            background: #F6FAEF;
+        }}
+        .domo-worker-card.is-light * {{
+            color: #07100D !important;
+        }}
+        .domo-worker-card p,
+        .domo-side-card p {{
+            color: rgba(243,247,234,.72) !important;
+            line-height: 1.36;
+        }}
+        .domo-worker-card.is-light p {{
+            color: rgba(7,16,13,.72) !important;
+        }}
+        .domo-avatar-row {{
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }}
+        .domo-mini-avatar {{
+            width: 48px;
+            height: 48px;
+            border-radius: 999px;
+            background: linear-gradient(135deg, #CFFF4F, #FF84D6);
+        }}
+        .domo-progress {{
+            height: 22px;
+            border-radius: 999px;
+            margin-top: 16px;
+            overflow: hidden;
+            background: rgba(7,10,8,.18);
+            border: 1px solid rgba(7,10,8,.20);
+        }}
+        .domo-progress span {{
+            display: block;
+            height: 100%;
+            width: 70%;
+            border-radius: inherit;
+            background: #07100D;
+        }}
+        .domo-task-pill {{
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+            min-height: 74px;
+            margin-bottom: 12px;
+            border-radius: 999px;
+            background: #303330;
+        }}
+        .domo-task-pill strong,
+        .domo-task-pill span {{
+            color: #F6FAEF !important;
+        }}
+        .domo-side-card {{
+            margin-bottom: 16px;
+            background: #101511;
+        }}
+        .domo-side-card h3 {{
+            color: #F6FAEF !important;
+            font-size: 1.45rem;
+            line-height: 1.08;
+            margin: 0 0 10px;
+        }}
+        .domo-side-profile {{
+            display: grid;
+            grid-template-columns: 48px 1fr auto;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 18px;
+        }}
+        .domo-side-profile strong {{
+            color: #F6FAEF !important;
+            font-size: 1rem;
+        }}
+        .domo-side-profile span {{
+            color: rgba(243,247,234,.58) !important;
+            font-size: .82rem;
+        }}
+        .domo-side-status {{
+            color: #CFFF4F !important;
+            font-weight: 950;
+        }}
+        .domo-side-big {{
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin: 16px 0;
+        }}
+        .domo-side-big strong {{
+            display: block;
+            color: #F6FAEF !important;
+            font-size: 2rem;
+            line-height: 1;
+        }}
+        .domo-side-big span {{
+            color: rgba(243,247,234,.56) !important;
+            font-size: .72rem;
+        }}
+        .domo-mini-calendar {{
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            margin-top: 12px;
+        }}
+        .domo-mini-calendar span {{
+            border-radius: 999px;
+            min-height: 34px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: #F6FAEF;
+            color: #07100D !important;
+            font-weight: 900;
+        }}
+        .domo-mini-calendar span.is-hot {{
+            background: #CFFF4F;
+        }}
+        .domo-chip-line {{
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 18px 0 8px;
+        }}
+        .domo-chip-line span {{
+            width: 50px;
+            height: 20px;
+            border-radius: 999px;
+            background: #F6FAEF;
+            display: inline-block;
+        }}
+        .domo-chip-line span:nth-child(2) {{
+            background: #7A7E78;
+        }}
+        .domo-chip-line span:nth-child(3) {{
+            background: #8C1DD9;
+        }}
+        .domo-chip-line span:nth-child(4) {{
+            background: #CFFF4F;
+        }}
+        .domo-progress-list {{
+            margin-top: 12px;
+        }}
+        .domo-progress-item {{
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 10px;
+            padding: 9px 0;
+            border-bottom: 1px solid rgba(243,247,234,.08);
+        }}
+        .domo-progress-item strong,
+        .domo-progress-item span {{
+            color: rgba(243,247,234,.76) !important;
+            font-size: .82rem;
+        }}
         @media (max-width: 760px) {{
             .domo-day-row {{
                 grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1614,9 +1960,26 @@ def inject_styles() -> None:
             }}
             .domo-floating-bot {{
                 position: sticky;
-                bottom: 10px;
+                top: 8px;
                 width: 100%;
                 margin-top: 18px;
+            }}
+        }}
+        @media (max-width: 980px) {{
+            .domo-board-top,
+            .domo-board-grid,
+            .domo-stat-row,
+            .domo-work-grid {{
+                grid-template-columns: 1fr;
+            }}
+            .domo-board-rail {{
+                display: none;
+            }}
+            .domo-board-title {{
+                text-align: left;
+            }}
+            .domo-board-main {{
+                border-right: 0;
             }}
         }}
         @media (max-width: 900px) {{
@@ -2106,21 +2469,148 @@ def render_publish_calendar(posts: pd.DataFrame) -> None:
 
 
 def render_command_center(posts: pd.DataFrame, action_items: pd.DataFrame) -> None:
-    st.subheader("Centro de acción")
     reading = build_metric_reading(posts)
     avg_share = safe_mean(posts, "share_rate")
     avg_save = safe_mean(posts, "save_rate")
     avg_comments = safe_mean(posts, "quality_comment_rate")
+    scored = with_strategic_score(posts)
+    if not scored.empty and "published_at" in scored.columns:
+        scored["published_at"] = pd.to_datetime(scored["published_at"], errors="coerce")
+        latest = scored.sort_values("published_at", ascending=False).head(1)
+    else:
+        latest = scored.head(1)
+    latest_title = str(latest.iloc[0].get("title", "Sin post reciente")) if not latest.empty else "Sin post reciente"
+    best_format = str(reading.get("best_format", "Reel/carrusel"))
+    best_pillar = str(reading.get("best_pillar", "DOMO ve el mundo"))
+    today = datetime.now()
+    hot_days = [1, 3]
+    if not scored.empty and "published_at" in scored.columns:
+        data = scored.dropna(subset=["published_at"]).copy()
+        if not data.empty:
+            data["weekday"] = data["published_at"].dt.weekday
+            hot_days = data.groupby("weekday")["strategic_score"].mean().sort_values(ascending=False).head(2).index.tolist()
+
+    day_names = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"]
+    schedule_items = []
+    mini_days = []
+    for offset in range(7):
+        date = today + timedelta(days=offset)
+        is_hot = date.weekday() in hot_days
+        class_name = "is-hot" if is_hot else ("is-muted" if offset < 2 else "")
+        label = "Plan fuerte" if is_hot else day_names[date.weekday()]
+        schedule_items.append(
+            f'<div class="domo-schedule-day {class_name}"><span>{html.escape(label)}</span><strong>{date.day}</strong></div>'
+        )
+        mini_days.append(f'<span class="{"is-hot" if is_hot else ""}">{date.day}</span>')
+
+    next_move = html.escape(str(reading["next_move"]))
+    headline = html.escape(str(reading["headline"]))
+    what_worked = html.escape(str(reading["what_worked"]))
+    what_failed = html.escape(str(reading["what_failed"]))
+    weak_signal = what_failed[:18]
+    latest_title = html.escape(latest_title)
+    best_format = html.escape(best_format)
+    best_pillar = html.escape(best_pillar)
 
     st.markdown(
         f"""
-        <div class="domo-callout">
-            Hoy: {reading["next_move"]}
+        <div class="domo-production-board">
+            <div class="domo-board-top">
+                <div class="domo-board-brand">DOMO</div>
+                <div class="domo-board-title">Visual Growth Planning</div>
+                <div class="domo-board-tools">
+                    <span class="domo-tool-dot">IA</span>
+                    <span class="domo-tool-dot">↗</span>
+                    <span class="domo-tool-dot">◉</span>
+                </div>
+            </div>
+            <div class="domo-board-grid">
+                <div class="domo-board-rail">
+                    <span class="domo-rail-icon is-active">01</span>
+                    <span class="domo-rail-icon">02</span>
+                    <span class="domo-rail-icon">03</span>
+                    <span class="domo-rail-icon">04</span>
+                    <span class="domo-rail-icon">05</span>
+                    <span class="domo-rail-spacer"></span>
+                    <span class="domo-rail-icon">IA</span>
+                </div>
+                <div class="domo-board-main">
+                    <div class="domo-stat-row">
+                        <div class="domo-stat-card is-primary">
+                            <h3>Process Runtime</h3>
+                            <span class="domo-stat-value">01</span>
+                            <small>{next_move}</small>
+                        </div>
+                        <div class="domo-stat-card is-light">
+                            <h3>Material Content</h3>
+                            <span class="domo-stat-value">{best_format[:2].upper()}</span>
+                            <small>{best_format}</small>
+                        </div>
+                        <div class="domo-stat-card">
+                            <h3>Brand Signal</h3>
+                            <span class="domo-stat-value">92</span>
+                            <small>{best_pillar}</small>
+                        </div>
+                    </div>
+                    <div class="domo-schedule">
+                        <div class="domo-schedule-title">
+                            <span>Content Runtime Schedule</span>
+                            <span>Cuenca</span>
+                        </div>
+                        <div class="domo-schedule-row">{''.join(schedule_items)}</div>
+                    </div>
+                    <div class="domo-work-grid">
+                        <div class="domo-worker-card is-light">
+                            <div class="domo-avatar-row">
+                                <span class="domo-mini-avatar"></span>
+                                <div><strong>Última publicación</strong><br><span>{latest_title}</span></div>
+                            </div>
+                            <h3>Contenido en progreso</h3>
+                            <p>{what_worked}</p>
+                            <div class="domo-progress"><span></span></div>
+                        </div>
+                        <div>
+                            <div class="domo-task-pill"><strong>Carrusel guardable</strong><span>↗</span></div>
+                            <div class="domo-task-pill"><strong>Reel con postura</strong><span>↗</span></div>
+                            <div class="domo-task-pill"><strong>LinkedIn autoridad</strong><span>↗</span></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="domo-board-side">
+                    <div class="domo-side-card">
+                        <div class="domo-side-profile">
+                            <span class="domo-mini-avatar"></span>
+                            <div><strong>DOMO Copiloto</strong><br><span>Content Lab</span></div>
+                            <span class="domo-side-status">Activo</span>
+                        </div>
+                        <h3>Visual Growth Mission</h3>
+                        <div class="domo-side-big">
+                            <div><strong>{as_percent(avg_share)}</strong><span>Shares</span></div>
+                            <div><strong>{as_percent(avg_save)}</strong><span>Saves</span></div>
+                            <div><strong>{as_percent(avg_comments)}</strong><span>Coments</span></div>
+                        </div>
+                        <p>{headline}</p>
+                        <div class="domo-chip-line"><span></span><span></span><span></span><span></span></div>
+                        <div class="domo-progress-list">
+                            <div class="domo-progress-item"><strong>Diagnóstico</strong><span>Activo</span></div>
+                            <div class="domo-progress-item"><strong>Punto débil</strong><span>{weak_signal}</span></div>
+                            <div class="domo-progress-item"><strong>Siguiente</strong><span>Crear</span></div>
+                        </div>
+                    </div>
+                    <div class="domo-side-card">
+                        <h3>Cuándo publicar</h3>
+                        <div class="domo-mini-calendar">{''.join(mini_days)}</div>
+                    </div>
+                    <div class="domo-side-card">
+                        <h3>Siguiente pieza</h3>
+                        <p>{next_move}</p>
+                    </div>
+                </div>
+            </div>
         </div>
         """,
         unsafe_allow_html=True,
     )
-    render_publish_calendar(posts)
 
     launchers = [
         ("Asistente", "Copiloto", "Pregunta qué publicar, cómo vender o cómo convertir una idea."),
@@ -2131,30 +2621,13 @@ def render_command_center(posts: pd.DataFrame, action_items: pd.DataFrame) -> No
         ("Capturas", "Data", "Subir números o screenshots."),
     ]
 
-    cols = st.columns(3)
+    st.markdown("### Herramientas rápidas")
+    cols = st.columns(6)
     for index, (target, label, description) in enumerate(launchers):
-        with cols[index % 3]:
-            index_class = ["", "is-blue", "is-pink", "is-orange", "", "is-blue"][index]
-            st.markdown(
-                f"""
-                <div class="domo-launch">
-                    <span class="domo-index {index_class}">{index + 1:02d}</span>
-                    <span class="domo-badge">{label}</span>
-                    <h3>{target}</h3>
-                    <p>{description}</p>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
-            if st.button(label, key=f"go_{target}"):
+        with cols[index % 6]:
+            if st.button(label, key=f"go_{target}", use_container_width=True):
                 st.session_state["page"] = target
                 st.rerun()
-
-    st.subheader("Pulso")
-    cols = st.columns(3)
-    cols[0].metric("Shares", as_percent(avg_share), help="Meta: que la gente lo quiera mandar a alguien.")
-    cols[1].metric("Saves", as_percent(avg_save), help="Meta: que la pieza sea referencia útil.")
-    cols[2].metric("Comentarios", as_percent(avg_comments), help="Meta: conversación real, no solo aplauso.")
 
     suggested = [
         {
@@ -3615,8 +4088,6 @@ def main() -> None:
     if not require_login():
         return
     render_mobile_hint()
-    render_header()
-    render_header_actions()
     (
         posts,
         daily,
@@ -3692,26 +4163,48 @@ def main() -> None:
     if page == "Inicio":
         render_command_center(posts, action_items)
     elif page == "Lectura":
+        render_header()
+        render_header_actions()
         render_growth_reading(posts, profile)
     elif page == "Asistente":
+        render_header()
+        render_header_actions()
         render_assistant(posts, assistant_notes)
     elif page == "Ideas":
+        render_header()
+        render_header_actions()
         render_ideas(posts, stored_ideas)
     elif page == "Carruseles":
+        render_header()
+        render_header_actions()
         render_carousels(posts, inspirations, carousels)
     elif page == "Capturas":
+        render_header()
+        render_header_actions()
         render_capture_lab(posts, screenshots)
     elif page == "Trends":
+        render_header()
+        render_header_actions()
         render_trend_lab(posts, trends)
     elif page == "Inspiración":
+        render_header()
+        render_header_actions()
         render_inspiration_lab(posts, inspirations)
     elif page == "Collabs":
+        render_header()
+        render_header_actions()
         render_collab_lab(posts, collabs)
     elif page == "Data Center":
+        render_header()
+        render_header_actions()
         render_data_center(posts, daily, profile, screenshots, inspirations, trends, collabs)
     elif page == "Admin":
+        render_header()
+        render_header_actions()
         render_admin()
     else:
+        render_header()
+        render_header_actions()
         tabs = st.tabs([
             "Resumen",
             "Lectura",
