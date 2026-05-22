@@ -1173,7 +1173,7 @@ def inject_styles() -> None:
                 linear-gradient(rgba(243,247,234,.055) 1px, transparent 1px),
                 linear-gradient(90deg, rgba(243,247,234,.055) 1px, transparent 1px) !important;
             background-size: 48px 48px !important;
-            animation: domo-grid-drift 12s linear infinite;
+            animation: none !important;
             opacity: .26 !important;
         }}
         .domo-hero-content {{
@@ -1182,6 +1182,7 @@ def inject_styles() -> None:
             max-width: 780px;
         }}
         .domo-motion-stage {{
+            display: none !important;
             position: absolute;
             top: 22px;
             right: 28px;
@@ -1414,6 +1415,7 @@ def inject_styles() -> None:
         .domo-hero h1 .domo-word:nth-child(4) {{ animation-delay: .18s; }}
         .domo-hero h1 .domo-word:nth-child(5) {{ animation-delay: .24s; }}
         .domo-motion-bar {{
+            display: none !important;
             position: relative;
             height: 10px;
             width: min(420px, 100%);
@@ -1431,6 +1433,31 @@ def inject_styles() -> None:
             border-radius: inherit;
             background: linear-gradient(90deg, #CFFF4F, #8FE7FF, #FF84D6);
             animation: domo-scan 2.8s cubic-bezier(.65,0,.35,1) infinite;
+        }}
+        .domo-hero-chip,
+        .domo-tool-dot,
+        .domo-rail-icon,
+        .domo-task-pill {{
+            text-decoration: none !important;
+            cursor: pointer;
+        }}
+        .domo-tool-dot:hover,
+        .domo-rail-icon:hover,
+        .domo-task-pill:hover,
+        .domo-schedule-day:hover,
+        .domo-chip-line span:hover {{
+            transform: translateY(-4px) scale(1.045);
+            filter: saturate(1.28);
+        }}
+        .domo-task-pill,
+        .domo-schedule-day,
+        .domo-tool-dot,
+        .domo-rail-icon,
+        .domo-chip-line span {{
+            transition: transform .22s cubic-bezier(.34,1.56,.64,1), filter .18s ease, box-shadow .18s ease;
+        }}
+        .domo-task-pill:hover {{
+            box-shadow: 0 18px 42px rgba(207,255,79,.10);
         }}
         .domo-chat-shell,
         .domo-output {{
@@ -1508,17 +1535,25 @@ def inject_styles() -> None:
         }}
         div[role="radiogroup"] {{
             display: grid;
-            gap: 6px;
+            gap: 8px;
         }}
         div[role="radiogroup"] label {{
-            border: 1px solid transparent !important;
-            border-radius: 18px !important;
-            transition: transform .18s cubic-bezier(.34,1.56,.64,1), background .18s ease, border-color .18s ease !important;
+            min-height: 38px !important;
+            padding: 7px 10px !important;
+            border: 1px solid rgba(243,247,234,.08) !important;
+            border-radius: 999px !important;
+            background: rgba(243,247,234,.035) !important;
+            transition: transform .18s cubic-bezier(.34,1.56,.64,1), background .18s ease, border-color .18s ease, box-shadow .18s ease !important;
         }}
         div[role="radiogroup"] label:has(input:checked) {{
-            background: rgba(207,255,79,.16) !important;
-            border-color: rgba(207,255,79,.36) !important;
+            background: rgba(207,255,79,.18) !important;
+            border-color: rgba(207,255,79,.54) !important;
+            box-shadow: 0 0 22px rgba(207,255,79,.10);
             transform: translateX(4px);
+        }}
+        div[role="radiogroup"] label:hover {{
+            transform: translateX(4px) scale(1.015);
+            border-color: rgba(207,255,79,.32) !important;
         }}
         .domo-wallet-calendar {{
             margin: 22px 0 26px;
@@ -1560,6 +1595,22 @@ def inject_styles() -> None:
             margin: 8px 0 0;
             font-size: .82rem;
             line-height: 1.35;
+        }}
+        .domo-floating-bot a {{
+            display: inline-flex;
+            margin-top: 10px;
+            padding: 7px 12px;
+            border-radius: 999px;
+            background: #CFFF4F;
+            color: #07100D !important;
+            font-weight: 950;
+            font-size: .78rem;
+            text-decoration: none !important;
+            transition: transform .18s cubic-bezier(.34,1.56,.64,1), filter .18s ease;
+        }}
+        .domo-floating-bot a:hover {{
+            transform: translateY(-2px) scale(1.04);
+            filter: saturate(1.2);
         }}
         .domo-day-row {{
             display: grid;
@@ -2270,30 +2321,12 @@ def render_header() -> None:
                 qué corregir y qué contenido crear para mover shares, guardados,
                 comentarios buenos, perfil y oportunidades comerciales.
                 </p>
-                <div class="domo-motion-bar"></div>
                 <div class="domo-hero-grid">
-                    <div class="domo-hero-chip">Leer métricas</div>
-                    <div class="domo-hero-chip">Crear contenido</div>
-                    <div class="domo-hero-chip">Buscar collabs</div>
-                    <div class="domo-hero-chip">Guardar aprendizaje</div>
+                    <a class="domo-hero-chip" href="?page=Lectura" target="_self">Leer métricas</a>
+                    <a class="domo-hero-chip" href="?page=Ideas" target="_self">Crear contenido</a>
+                    <a class="domo-hero-chip" href="?page=Collabs" target="_self">Buscar collabs</a>
+                    <a class="domo-hero-chip" href="?page=Capturas" target="_self">Guardar aprendizaje</a>
                 </div>
-            </div>
-            <div class="domo-motion-stage" aria-hidden="true">
-                <div class="domo-orbit-ring"></div>
-                <div class="domo-orbit-ring"></div>
-                <div class="domo-orbit-dot"></div>
-                <div class="domo-orbit-dot"></div>
-                <div class="domo-orbit-dot"></div>
-                <svg class="domo-motion-svg" viewBox="0 0 340 250">
-                    <path d="M18 188 C86 72, 170 206, 320 48"></path>
-                    <path d="M28 54 C102 120, 182 26, 310 150"></path>
-                    <circle cx="62" cy="88" r="4"></circle>
-                    <circle cx="178" cy="154" r="4"></circle>
-                    <circle cx="286" cy="76" r="4"></circle>
-                </svg>
-                <div class="domo-path-dot"></div>
-                <div class="domo-shape domo-shape-a"></div>
-                <div class="domo-shape domo-shape-b"></div>
             </div>
         </div>
         """,
@@ -2423,6 +2456,7 @@ def render_floating_copilot(page: str, posts: pd.DataFrame) -> None:
         <div class="domo-floating-bot">
             <strong><span class="domo-ai-dot"></span> Copiloto leyendo esta pantalla</strong>
             <p>{html.escape(tip)}</p>
+            <a href="?page=Asistente" target="_self">Preguntar ahora</a>
         </div>
         """,
         unsafe_allow_html=True,
@@ -2519,20 +2553,20 @@ def render_command_center(posts: pd.DataFrame, action_items: pd.DataFrame) -> No
                 <div class="domo-board-brand">DOMO</div>
                 <div class="domo-board-title">Visual Growth Planning</div>
                 <div class="domo-board-tools">
-                    <span class="domo-tool-dot">IA</span>
-                    <span class="domo-tool-dot">↗</span>
-                    <span class="domo-tool-dot">◉</span>
+                    <a class="domo-tool-dot" href="?page=Asistente" target="_self">IA</a>
+                    <a class="domo-tool-dot" href="?page=Dashboard" target="_self">↗</a>
+                    <a class="domo-tool-dot" href="?page=Admin" target="_self">◉</a>
                 </div>
             </div>
             <div class="domo-board-grid">
                 <div class="domo-board-rail">
-                    <span class="domo-rail-icon is-active">01</span>
-                    <span class="domo-rail-icon">02</span>
-                    <span class="domo-rail-icon">03</span>
-                    <span class="domo-rail-icon">04</span>
-                    <span class="domo-rail-icon">05</span>
+                    <a class="domo-rail-icon is-active" href="?page=Inicio" target="_self">01</a>
+                    <a class="domo-rail-icon" href="?page=Lectura" target="_self">02</a>
+                    <a class="domo-rail-icon" href="?page=Asistente" target="_self">03</a>
+                    <a class="domo-rail-icon" href="?page=Ideas" target="_self">04</a>
+                    <a class="domo-rail-icon" href="?page=Collabs" target="_self">05</a>
                     <span class="domo-rail-spacer"></span>
-                    <span class="domo-rail-icon">IA</span>
+                    <a class="domo-rail-icon" href="?page=Asistente" target="_self">IA</a>
                 </div>
                 <div class="domo-board-main">
                     <div class="domo-stat-row">
@@ -2570,9 +2604,9 @@ def render_command_center(posts: pd.DataFrame, action_items: pd.DataFrame) -> No
                             <div class="domo-progress"><span></span></div>
                         </div>
                         <div>
-                            <div class="domo-task-pill"><strong>Carrusel guardable</strong><span>↗</span></div>
-                            <div class="domo-task-pill"><strong>Reel con postura</strong><span>↗</span></div>
-                            <div class="domo-task-pill"><strong>LinkedIn autoridad</strong><span>↗</span></div>
+                            <a class="domo-task-pill" href="?page=Carruseles" target="_self"><strong>Carrusel guardable</strong><span>↗</span></a>
+                            <a class="domo-task-pill" href="?page=Ideas" target="_self"><strong>Reel con postura</strong><span>↗</span></a>
+                            <a class="domo-task-pill" href="?page=Asistente" target="_self"><strong>LinkedIn autoridad</strong><span>↗</span></a>
                         </div>
                     </div>
                 </div>
@@ -4147,6 +4181,11 @@ def main() -> None:
     }
     if "page" not in st.session_state:
         st.session_state["page"] = "Inicio"
+    query_page = st.query_params.get("page")
+    if isinstance(query_page, list):
+        query_page = query_page[0] if query_page else None
+    if query_page in nav_options:
+        st.session_state["page"] = query_page
     current_page = st.session_state["page"] if st.session_state["page"] in nav_options else "Inicio"
     label_options = [nav_labels[item] for item in nav_options]
     selected_label = st.sidebar.radio(
@@ -4156,6 +4195,7 @@ def main() -> None:
     )
     page = next(key for key, label in nav_labels.items() if label == selected_label)
     st.session_state["page"] = page
+    st.query_params["page"] = page
     st.sidebar.caption(nav_help.get(page, ""))
     render_sidebar_copilot(page, posts)
     render_floating_copilot(page, posts)
