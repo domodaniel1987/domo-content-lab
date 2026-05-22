@@ -789,11 +789,639 @@ def inject_styles() -> None:
             color: var(--md-sys-color-tertiary) !important;
             font-weight: 800;
         }}
+        /* DOMO dark mode v2: simpler, readable, no cropped text */
+        :root {{
+            --md-sys-color-primary: #F3F7EA;
+            --md-sys-color-on-primary: #07100D;
+            --md-sys-color-primary-container: #CFFF4F;
+            --md-sys-color-on-primary-container: #07100D;
+            --md-sys-color-secondary: #8FE7FF;
+            --md-sys-color-tertiary: #FF84D6;
+            --md-sys-color-error: #FF6B7A;
+            --md-sys-color-background: #070A08;
+            --md-sys-color-surface: #101511;
+            --md-sys-color-surface-container: #171D18;
+            --md-sys-color-surface-container-high: #202720;
+            --md-sys-color-outline: rgba(243,247,234,.20);
+            --md-sys-color-outline-variant: rgba(243,247,234,.10);
+            --md-sys-elevation-1: 0 1px 0 rgba(255,255,255,.04), 0 12px 26px rgba(0,0,0,.24);
+            --md-sys-elevation-2: 0 1px 0 rgba(255,255,255,.06), 0 18px 42px rgba(0,0,0,.34);
+            --md-sys-elevation-3: 0 1px 0 rgba(255,255,255,.08), 0 26px 62px rgba(0,0,0,.44);
+        }}
+        html, body, .stApp {{
+            background:
+                radial-gradient(circle at 15% 0%, rgba(207,255,79,.12), transparent 30%),
+                radial-gradient(circle at 88% 4%, rgba(143,231,255,.10), transparent 28%),
+                #070A08 !important;
+            color: var(--md-sys-color-primary) !important;
+        }}
+        .block-container {{
+            max-width: 1120px;
+            padding-top: 1rem;
+            padding-left: clamp(1rem, 3vw, 2rem);
+            padding-right: clamp(1rem, 3vw, 2rem);
+        }}
+        h1 {{
+            font-size: clamp(2rem, 4vw, 3.7rem) !important;
+            line-height: 1 !important;
+            color: #F6FAEF !important;
+            max-width: 760px;
+        }}
+        h2, h3, h4, p, li, label, span, div[data-testid="stMarkdownContainer"] {{
+            color: var(--md-sys-color-primary) !important;
+        }}
+        div[data-testid="stMarkdownContainer"] p,
+        .domo-hero p,
+        .domo-action p,
+        .domo-launch p,
+        .domo-read p {{
+            color: rgba(243,247,234,.70) !important;
+        }}
+        [data-testid="stHeader"] {{
+            background: rgba(7,10,8,.82) !important;
+            border-bottom: 1px solid rgba(243,247,234,.08);
+        }}
+        .domo-hero {{
+            background:
+                linear-gradient(135deg, rgba(16,21,17,.96), rgba(23,29,24,.94)) !important;
+            border: 1px solid rgba(243,247,234,.10);
+            border-radius: 28px;
+            padding: clamp(18px, 3vw, 28px);
+            margin-bottom: 18px;
+            box-shadow: var(--md-sys-elevation-2);
+            overflow: hidden;
+        }}
+        .domo-hero:after {{
+            opacity: .35;
+            border-color: rgba(207,255,79,.28);
+        }}
+        .domo-hero h1 {{
+            margin: 10px 0 12px;
+        }}
+        .domo-topbar {{
+            margin-bottom: 10px;
+        }}
+        .domo-search-pill {{
+            background: rgba(243,247,234,.07);
+            border-color: rgba(243,247,234,.12);
+            color: rgba(243,247,234,.62) !important;
+            box-shadow: none;
+        }}
+        .domo-avatar {{
+            background: #CFFF4F;
+            color: #07100D !important;
+        }}
+        .domo-label,
+        .domo-badge,
+        .domo-pill,
+        .domo-step-number {{
+            color: #07100D !important;
+            background: #CFFF4F !important;
+            border: 0 !important;
+            box-shadow: none !important;
+        }}
+        .domo-hero-grid {{
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 8px;
+            margin-top: 16px;
+        }}
+        .domo-hero-chip {{
+            color: #07100D !important;
+            border: 0;
+            min-height: 38px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            white-space: normal;
+        }}
+        .domo-step,
+        .domo-action,
+        .domo-launch,
+        .domo-read,
+        .domo-output,
+        .domo-chat-shell,
+        .domo-memory-card,
+        div[data-testid="stExpander"],
+        [data-testid="stMetric"] {{
+            background: #101511 !important;
+            border: 1px solid rgba(243,247,234,.10) !important;
+            border-radius: 24px !important;
+            box-shadow: var(--md-sys-elevation-1) !important;
+        }}
+        .domo-step,
+        .domo-action,
+        .domo-launch {{
+            min-height: auto !important;
+            padding: 16px !important;
+        }}
+        .domo-action strong,
+        .domo-launch h3,
+        .domo-step h3 {{
+            color: #F6FAEF !important;
+            font-size: 1.02rem !important;
+            line-height: 1.18 !important;
+        }}
+        .domo-action p,
+        .domo-launch p,
+        .domo-step p {{
+            font-size: .92rem !important;
+            line-height: 1.42 !important;
+        }}
+        .domo-callout {{
+            background: #CFFF4F !important;
+            color: #07100D !important;
+            border-radius: 22px !important;
+            padding: 14px 16px !important;
+            box-shadow: none !important;
+            border: 0 !important;
+        }}
+        .domo-callout * {{
+            color: #07100D !important;
+        }}
+        input,
+        textarea,
+        [data-baseweb="input"] > div,
+        [data-baseweb="select"] > div,
+        [data-baseweb="textarea"] > div {{
+            background: #151B16 !important;
+            border: 1px solid rgba(243,247,234,.18) !important;
+            color: #F6FAEF !important;
+            border-radius: 18px !important;
+            box-shadow: none !important;
+        }}
+        input:focus,
+        textarea:focus {{
+            outline: 2px solid rgba(207,255,79,.65) !important;
+            outline-offset: 2px !important;
+        }}
+        input::placeholder,
+        textarea::placeholder {{
+            color: rgba(243,247,234,.45) !important;
+        }}
+        .stTextInput label,
+        .stTextArea label,
+        .stSelectbox label,
+        .stSlider label,
+        .stNumberInput label {{
+            color: rgba(243,247,234,.76) !important;
+            font-size: .9rem !important;
+        }}
+        .stButton > button,
+        .stDownloadButton > button,
+        button[kind="primary"] {{
+            background: #CFFF4F !important;
+            color: #07100D !important;
+            border-radius: 999px !important;
+            min-height: 40px !important;
+            box-shadow: none !important;
+            border: 0 !important;
+        }}
+        .stButton > button *,
+        .stDownloadButton > button * {{
+            color: #07100D !important;
+        }}
+        .stButton > button:hover,
+        .stDownloadButton > button:hover {{
+            background: #E0FF83 !important;
+            transform: translateY(-1px) scale(1.01);
+        }}
+        section[data-testid="stSidebar"] {{
+            background: #0B0F0C !important;
+            border-right: 1px solid rgba(243,247,234,.08);
+            width: 300px !important;
+        }}
+        section[data-testid="stSidebar"] * {{
+            color: rgba(243,247,234,.84) !important;
+        }}
+        div[role="radiogroup"] label {{
+            background: transparent !important;
+            color: rgba(243,247,234,.82) !important;
+            min-height: 34px !important;
+            padding: 5px 8px !important;
+        }}
+        div[role="radiogroup"] label:hover {{
+            background: rgba(207,255,79,.10) !important;
+        }}
+        .stTabs [data-baseweb="tab-list"] {{
+            background: #101511 !important;
+            border: 1px solid rgba(243,247,234,.10);
+            max-width: 100%;
+            overflow-x: auto;
+        }}
+        .stTabs [data-baseweb="tab"] {{
+            color: rgba(243,247,234,.78) !important;
+        }}
+        .stTabs [aria-selected="true"] {{
+            background: #CFFF4F !important;
+            color: #07100D !important;
+        }}
+        div[data-testid="stDataFrame"] {{
+            background: #101511 !important;
+            border-color: rgba(243,247,234,.10) !important;
+        }}
+        [data-testid="stMetricLabel"] p {{
+            color: rgba(243,247,234,.62) !important;
+        }}
+        [data-testid="stMetricValue"] {{
+            color: #F6FAEF !important;
+            font-size: clamp(1.9rem, 3vw, 3.4rem) !important;
+        }}
+        [data-testid="stAlert"] {{
+            background: rgba(207,255,79,.12) !important;
+            border: 1px solid rgba(207,255,79,.20) !important;
+            color: #F6FAEF !important;
+            border-radius: 20px !important;
+        }}
+        .domo-chat-user {{
+            background: #CFFF4F !important;
+            color: #07100D !important;
+        }}
+        .domo-chat-user * {{
+            color: #07100D !important;
+        }}
+        .domo-chat-assistant {{
+            background: #171D18 !important;
+            color: #F6FAEF !important;
+        }}
+        a {{
+            color: #8FE7FF !important;
+        }}
+        .domo-slide {{
+            background: linear-gradient(160deg, #101511, #1E2A20 70%, #173F3E) !important;
+            border-color: rgba(243,247,234,.10) !important;
+            box-shadow: var(--md-sys-elevation-2) !important;
+        }}
+        .domo-slide-text,
+        .domo-slide-detail {{
+            color: #F6FAEF !important;
+        }}
+        .domo-slide:hover {{
+            box-shadow: var(--md-sys-elevation-3) !important;
+        }}
+        /* Anime.js inspired layer: stagger, orbit, motion paths, elastic UI */
+        @keyframes domo-orbit {{
+            from {{ transform: rotate(0deg) translateX(42px) rotate(0deg); }}
+            to {{ transform: rotate(360deg) translateX(42px) rotate(-360deg); }}
+        }}
+        @keyframes domo-orbit-rev {{
+            from {{ transform: rotate(360deg) translateX(62px) rotate(-360deg); }}
+            to {{ transform: rotate(0deg) translateX(62px) rotate(0deg); }}
+        }}
+        @keyframes domo-pulse-dot {{
+            0%, 100% {{ opacity: .38; transform: scale(.78); }}
+            50% {{ opacity: 1; transform: scale(1.14); }}
+        }}
+        @keyframes domo-draw-line {{
+            from {{ stroke-dashoffset: 360; }}
+            to {{ stroke-dashoffset: 0; }}
+        }}
+        @keyframes domo-float-shape {{
+            0%, 100% {{ transform: translate3d(0,0,0) rotate(0deg); }}
+            33% {{ transform: translate3d(10px,-8px,0) rotate(4deg); }}
+            66% {{ transform: translate3d(-8px,6px,0) rotate(-3deg); }}
+        }}
+        @keyframes domo-stagger-in {{
+            0% {{ opacity: 0; transform: translateY(18px) scale(.96); }}
+            70% {{ opacity: 1; transform: translateY(-2px) scale(1.012); }}
+            100% {{ opacity: 1; transform: translateY(0) scale(1); }}
+        }}
+        @keyframes domo-word-reveal {{
+            0% {{ opacity: 0; transform: translateY(1.05em) rotate(2deg); filter: blur(8px); }}
+            62% {{ opacity: 1; transform: translateY(-.05em) rotate(-.5deg); filter: blur(0); }}
+            100% {{ opacity: 1; transform: translateY(0) rotate(0deg); filter: blur(0); }}
+        }}
+        @keyframes domo-scan {{
+            0% {{ transform: translateX(-120%) scaleX(.35); opacity: 0; }}
+            18% {{ opacity: .9; }}
+            72% {{ opacity: .9; }}
+            100% {{ transform: translateX(150%) scaleX(1); opacity: 0; }}
+        }}
+        @keyframes domo-morph-card {{
+            0%, 100% {{ border-radius: 38% 62% 54% 46% / 52% 42% 58% 48%; }}
+            50% {{ border-radius: 58% 42% 44% 56% / 42% 58% 42% 58%; }}
+        }}
+        @keyframes domo-path-travel {{
+            0% {{ offset-distance: 0%; opacity: 0; }}
+            12% {{ opacity: 1; }}
+            88% {{ opacity: 1; }}
+            100% {{ offset-distance: 100%; opacity: 0; }}
+        }}
+        @keyframes domo-number-pop {{
+            0% {{ opacity: 0; transform: translateY(16px) scale(.72) rotate(-6deg); }}
+            58% {{ opacity: 1; transform: translateY(-5px) scale(1.18) rotate(2deg); }}
+            100% {{ opacity: 1; transform: translateY(0) scale(1) rotate(0deg); }}
+        }}
+        @keyframes domo-live-border {{
+            0% {{ background-position: 0% 50%; }}
+            50% {{ background-position: 100% 50%; }}
+            100% {{ background-position: 0% 50%; }}
+        }}
+        @keyframes domo-grid-drift {{
+            from {{ background-position: 0 0, 0 0; }}
+            to {{ background-position: 48px 48px, -48px 48px; }}
+        }}
+        @keyframes domo-text-pulse {{
+            0%, 100% {{ color: #F6FAEF; text-shadow: 0 0 0 rgba(207,255,79,0); }}
+            50% {{ color: #CFFF4F; text-shadow: 0 0 20px rgba(207,255,79,.18); }}
+        }}
+        @keyframes domo-arrow-run {{
+            from {{ transform: translateX(-14px); opacity: 0; }}
+            35% {{ opacity: 1; }}
+            to {{ transform: translateX(18px); opacity: 0; }}
+        }}
+        .domo-hero {{
+            min-height: 310px;
+        }}
+        .domo-hero::before {{
+            background:
+                linear-gradient(rgba(243,247,234,.055) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(243,247,234,.055) 1px, transparent 1px) !important;
+            background-size: 48px 48px !important;
+            animation: domo-grid-drift 12s linear infinite;
+            opacity: .26 !important;
+        }}
+        .domo-hero-content {{
+            position: relative;
+            z-index: 2;
+            max-width: 780px;
+        }}
+        .domo-motion-stage {{
+            position: absolute;
+            top: 22px;
+            right: 28px;
+            width: min(340px, 34vw);
+            height: 250px;
+            opacity: .92;
+            pointer-events: none;
+            z-index: 1;
+        }}
+        .domo-orbit-ring {{
+            position: absolute;
+            inset: 36px 22px 20px 68px;
+            border: 1px dashed rgba(207,255,79,.22);
+            border-radius: 999px;
+            transform: rotate(-10deg);
+        }}
+        .domo-orbit-ring:nth-child(2) {{
+            inset: 64px 54px 48px 34px;
+            border-color: rgba(143,231,255,.20);
+            transform: rotate(18deg);
+        }}
+        .domo-orbit-dot {{
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            width: 13px;
+            height: 13px;
+            border-radius: 999px;
+            background: #CFFF4F;
+            box-shadow: 0 0 24px rgba(207,255,79,.46);
+            animation: domo-orbit 5.8s linear infinite;
+        }}
+        .domo-orbit-dot:nth-child(4) {{
+            background: #8FE7FF;
+            box-shadow: 0 0 24px rgba(143,231,255,.42);
+            animation: domo-orbit-rev 7.2s linear infinite;
+        }}
+        .domo-orbit-dot:nth-child(5) {{
+            background: #FF84D6;
+            box-shadow: 0 0 24px rgba(255,132,214,.42);
+            animation: domo-orbit 8.4s linear infinite reverse;
+        }}
+        .domo-motion-svg {{
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            overflow: visible;
+        }}
+        .domo-motion-svg path {{
+            fill: none;
+            stroke: rgba(243,247,234,.20);
+            stroke-width: 1.5;
+            stroke-dasharray: 360;
+            animation: domo-draw-line 3.8s cubic-bezier(.65,0,.35,1) infinite alternate;
+        }}
+        .domo-motion-svg circle {{
+            fill: rgba(207,255,79,.72);
+            animation: domo-pulse-dot 2.4s ease-in-out infinite;
+        }}
+        .domo-path-dot {{
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            border-radius: 999px;
+            left: 0;
+            top: 0;
+            background: #F6FAEF;
+            box-shadow: 0 0 22px rgba(246,250,239,.5);
+            offset-path: path("M18 188 C86 72, 170 206, 320 48");
+            animation: domo-path-travel 4.4s cubic-bezier(.65,0,.35,1) infinite;
+        }}
+        .domo-shape {{
+            position: absolute;
+            border-radius: 28px;
+            border: 1px solid rgba(243,247,234,.12);
+            background: rgba(243,247,234,.035);
+            backdrop-filter: blur(6px);
+            animation: domo-float-shape 6s ease-in-out infinite;
+        }}
+        .domo-shape-a {{
+            width: 96px;
+            height: 66px;
+            right: 16px;
+            bottom: 16px;
+            animation-name: domo-float-shape, domo-morph-card;
+            animation-duration: 6s, 7s;
+            animation-timing-function: ease-in-out, ease-in-out;
+            animation-iteration-count: infinite, infinite;
+        }}
+        .domo-shape-b {{
+            width: 72px;
+            height: 72px;
+            right: 126px;
+            top: 18px;
+            border-radius: 999px;
+            animation-delay: .8s;
+        }}
+        .domo-launch,
+        .domo-action,
+        .domo-step,
+        .domo-read,
+        [data-testid="stMetric"],
+        div[data-testid="stExpander"] {{
+            animation-name: domo-stagger-in !important;
+            animation-duration: .55s !important;
+            animation-timing-function: cubic-bezier(.34,1.56,.64,1) !important;
+        }}
+        .domo-launch,
+        .domo-action {{
+            position: relative;
+            overflow: hidden;
+        }}
+        .domo-launch::after,
+        .domo-action::after {{
+            content: "";
+            position: absolute;
+            inset: 0;
+            padding: 1px;
+            border-radius: inherit;
+            background: linear-gradient(120deg, rgba(207,255,79,.75), rgba(143,231,255,.55), rgba(255,132,214,.55), rgba(207,255,79,.75));
+            background-size: 260% 260%;
+            opacity: 0;
+            -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            pointer-events: none;
+            animation: domo-live-border 4s ease infinite;
+            transition: opacity .18s ease;
+        }}
+        .domo-launch:hover,
+        .domo-action:hover,
+        .domo-step:hover,
+        .domo-read:hover {{
+            transform: translateY(-7px) scale(1.025) !important;
+            border-color: rgba(207,255,79,.32) !important;
+        }}
+        .domo-launch:hover::after,
+        .domo-action:hover::after {{
+            opacity: 1;
+        }}
+        .domo-index {{
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 50px;
+            height: 50px;
+            margin: 0 0 12px;
+            border-radius: 18px;
+            background: #CFFF4F;
+            color: #07100D !important;
+            font-size: 1.45rem;
+            font-weight: 950;
+            letter-spacing: 0;
+            box-shadow: 0 0 0 1px rgba(207,255,79,.18), 0 14px 34px rgba(207,255,79,.13);
+            animation: domo-number-pop .72s cubic-bezier(.34,1.56,.64,1) both;
+        }}
+        .domo-index.is-blue {{
+            background: #8FE7FF;
+        }}
+        .domo-index.is-pink {{
+            background: #FF84D6;
+        }}
+        .domo-index.is-orange {{
+            background: #FFC957;
+        }}
+        .domo-launch h3,
+        .domo-action strong {{
+            animation: domo-text-pulse 4.8s ease-in-out infinite;
+        }}
+        .domo-launch p::after,
+        .domo-action p::after {{
+            content: "  ->";
+            display: inline-block;
+            color: #CFFF4F;
+            font-weight: 900;
+            animation: domo-arrow-run 1.8s ease-in-out infinite;
+        }}
+        .domo-launch h3::after,
+        .domo-action strong::after {{
+            content: "";
+            display: block;
+            width: 32px;
+            height: 3px;
+            border-radius: 999px;
+            margin-top: 10px;
+            background: linear-gradient(90deg, #CFFF4F, #8FE7FF, #FF84D6);
+            transform-origin: left;
+            transform: scaleX(.45);
+            transition: transform .24s cubic-bezier(.34,1.56,.64,1);
+        }}
+        .domo-launch:hover h3::after,
+        .domo-action:hover strong::after {{
+            transform: scaleX(1);
+        }}
+        .stButton > button {{
+            transition: transform .18s cubic-bezier(.34,1.56,.64,1), background .18s ease !important;
+        }}
+        .stButton > button:active {{
+            transform: translateY(1px) scale(.96) !important;
+        }}
+        .domo-hero-chip {{
+            animation: domo-stagger-in .55s cubic-bezier(.34,1.56,.64,1) both;
+        }}
+        .domo-hero-chip:nth-child(2) {{ animation-delay: .06s; }}
+        .domo-hero-chip:nth-child(3) {{ animation-delay: .12s; }}
+        .domo-hero-chip:nth-child(4) {{ animation-delay: .18s; }}
+        .domo-hero-chip:hover {{
+            transform: translateY(-4px) scale(1.04) !important;
+            filter: saturate(1.25);
+        }}
+        .domo-hero h1 .domo-word {{
+            display: inline-block;
+            animation: domo-word-reveal .78s cubic-bezier(.34,1.56,.64,1) both;
+            transform-origin: 0 100%;
+        }}
+        .domo-hero h1 .domo-word:nth-child(2) {{ animation-delay: .06s; }}
+        .domo-hero h1 .domo-word:nth-child(3) {{ animation-delay: .12s; }}
+        .domo-hero h1 .domo-word:nth-child(4) {{ animation-delay: .18s; }}
+        .domo-hero h1 .domo-word:nth-child(5) {{ animation-delay: .24s; }}
+        .domo-motion-bar {{
+            position: relative;
+            height: 10px;
+            width: min(420px, 100%);
+            margin: 18px 0 0;
+            overflow: hidden;
+            border-radius: 999px;
+            background: rgba(243,247,234,.08);
+            border: 1px solid rgba(243,247,234,.10);
+        }}
+        .domo-motion-bar::before {{
+            content: "";
+            position: absolute;
+            inset: 1px 0;
+            width: 46%;
+            border-radius: inherit;
+            background: linear-gradient(90deg, #CFFF4F, #8FE7FF, #FF84D6);
+            animation: domo-scan 2.8s cubic-bezier(.65,0,.35,1) infinite;
+        }}
+        .domo-chat-shell,
+        .domo-output {{
+            position: relative;
+            overflow: hidden;
+        }}
+        .domo-chat-shell::after,
+        .domo-output::after {{
+            content: "";
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            background: linear-gradient(120deg, transparent 0%, rgba(207,255,79,.06) 44%, transparent 58%);
+            transform: translateX(-100%);
+            animation: domo-scan 5.5s ease-in-out infinite;
+        }}
+        @media (max-width: 900px) {{
+            .domo-motion-stage {{
+                position: relative;
+                top: auto;
+                right: auto;
+                width: 100%;
+                height: 150px;
+                margin-top: 14px;
+            }}
+            .domo-hero {{
+                min-height: auto;
+            }}
+        }}
         .domo-step:nth-of-type(2),
         .domo-action:nth-of-type(2),
         .domo-launch:nth-of-type(2),
         .domo-slide:nth-of-type(2) {{
             animation-delay: .05s;
+        }}
+        .domo-launch:nth-of-type(2) .domo-index,
+        .domo-action:nth-of-type(2) .domo-index {{
+            animation-delay: .08s;
         }}
         .domo-step:nth-of-type(3),
         .domo-action:nth-of-type(3),
@@ -801,11 +1429,19 @@ def inject_styles() -> None:
         .domo-slide:nth-of-type(3) {{
             animation-delay: .1s;
         }}
+        .domo-launch:nth-of-type(3) .domo-index,
+        .domo-action:nth-of-type(3) .domo-index {{
+            animation-delay: .16s;
+        }}
         .domo-step:nth-of-type(4),
         .domo-action:nth-of-type(4),
         .domo-launch:nth-of-type(4),
         .domo-slide:nth-of-type(4) {{
             animation-delay: .15s;
+        }}
+        .domo-launch:nth-of-type(4) .domo-index,
+        .domo-action:nth-of-type(4) .domo-index {{
+            animation-delay: .24s;
         }}
         @media (prefers-reduced-motion: reduce) {{
             *,
@@ -1035,22 +1671,47 @@ def render_header() -> None:
     st.markdown(
         """
         <div class="domo-hero">
-            <div class="domo-topbar">
-                <div class="domo-search-pill">Buscar idea, marca, métrica o próximo movimiento</div>
-                <div class="domo-avatar">D</div>
+            <div class="domo-hero-content">
+                <div class="domo-topbar">
+                    <div class="domo-search-pill">Buscar idea, marca, métrica o próximo movimiento</div>
+                    <div class="domo-avatar">D</div>
+                </div>
+                <span class="domo-label">DOMO Content Lab</span>
+                <h1>
+                    <span class="domo-word">Asistente</span>
+                    <span class="domo-word">de</span>
+                    <span class="domo-word">crecimiento</span>
+                    <span class="domo-word">visual</span>
+                </h1>
+                <p>
+                Tu centro de decisiones para Instagram y LinkedIn: entiende qué pegó,
+                qué corregir y qué contenido crear para mover shares, guardados,
+                comentarios buenos, perfil y oportunidades comerciales.
+                </p>
+                <div class="domo-motion-bar"></div>
+                <div class="domo-hero-grid">
+                    <div class="domo-hero-chip">Leer métricas</div>
+                    <div class="domo-hero-chip">Crear contenido</div>
+                    <div class="domo-hero-chip">Buscar collabs</div>
+                    <div class="domo-hero-chip">Guardar aprendizaje</div>
+                </div>
             </div>
-            <span class="domo-label">DOMO Content Lab</span>
-            <h1>Asistente de crecimiento visual</h1>
-            <p>
-            Tu centro de decisiones para Instagram y LinkedIn: entiende qué pegó,
-            qué corregir y qué contenido crear para mover shares, guardados,
-            comentarios buenos, perfil y oportunidades comerciales.
-            </p>
-            <div class="domo-hero-grid">
-                <div class="domo-hero-chip">Leer métricas</div>
-                <div class="domo-hero-chip">Crear contenido</div>
-                <div class="domo-hero-chip">Buscar collabs</div>
-                <div class="domo-hero-chip">Guardar aprendizaje</div>
+            <div class="domo-motion-stage" aria-hidden="true">
+                <div class="domo-orbit-ring"></div>
+                <div class="domo-orbit-ring"></div>
+                <div class="domo-orbit-dot"></div>
+                <div class="domo-orbit-dot"></div>
+                <div class="domo-orbit-dot"></div>
+                <svg class="domo-motion-svg" viewBox="0 0 340 250">
+                    <path d="M18 188 C86 72, 170 206, 320 48"></path>
+                    <path d="M28 54 C102 120, 182 26, 310 150"></path>
+                    <circle cx="62" cy="88" r="4"></circle>
+                    <circle cx="178" cy="154" r="4"></circle>
+                    <circle cx="286" cy="76" r="4"></circle>
+                </svg>
+                <div class="domo-path-dot"></div>
+                <div class="domo-shape domo-shape-a"></div>
+                <div class="domo-shape domo-shape-b"></div>
             </div>
         </div>
         """,
@@ -1100,43 +1761,23 @@ def render_command_center(posts: pd.DataFrame, action_items: pd.DataFrame) -> No
         unsafe_allow_html=True,
     )
 
-    st.markdown("#### Flujo simple")
-    workflow = [
-        ("1", "Leer", "Revisa qué está funcionando y qué señal está floja."),
-        ("2", "Decidir", "Elige una idea según shares, saves, comentarios o leads."),
-        ("3", "Crear", "Genera carrusel, post de LinkedIn o guion de Reel."),
-        ("4", "Guardar", "Sube métricas/capturas para que el sistema aprenda."),
-    ]
-    cols = st.columns(4)
-    for col, (number, title, text) in zip(cols, workflow):
-        with col:
-            st.markdown(
-                f"""
-                <div class="domo-step">
-                    <span class="domo-step-number">{number}</span>
-                    <h3>{title}</h3>
-                    <p>{text}</p>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
-
     launchers = [
-        ("Ideas", "Crear idea", "Reels, carruseles, branding, foto, INHAUS, mockups y LinkedIn."),
-        ("Lectura", "Qué pegó", "Diagnóstico claro: qué funcionó, qué no y qué corregir."),
-        ("Carruseles", "Hacer slides", "Frases por imagen listas para copiar y diseñar."),
-        ("Asistente", "Preguntar", "Dile una duda y responde como estratega DOMO."),
-        ("Inspiración", "Pegar link", "Convierte algo que viste en una idea a tu estilo."),
-        ("Capturas", "Subir data", "Guarda screenshots y números para crear memoria."),
-        ("Collabs", "Buscar marcas", "Encuentra oportunidades y redacta un mensaje de acercamiento."),
+        ("Asistente", "Copiloto", "Pregunta qué publicar, cómo vender o cómo convertir una idea."),
+        ("Ideas", "Ideas", "Reels, carruseles, branding, foto, mockups, INHAUS y LinkedIn."),
+        ("Carruseles", "Slides", "Frases por imagen listas para copiar."),
+        ("Lectura", "Métricas", "Qué pegó, qué no y qué corregir."),
+        ("Collabs", "Collabs", "Buscar marcas y preparar mensajes."),
+        ("Capturas", "Data", "Subir números o screenshots."),
     ]
 
     cols = st.columns(3)
     for index, (target, label, description) in enumerate(launchers):
         with cols[index % 3]:
+            index_class = ["", "is-blue", "is-pink", "is-orange", "", "is-blue"][index]
             st.markdown(
                 f"""
                 <div class="domo-launch">
+                    <span class="domo-index {index_class}">{index + 1:02d}</span>
                     <span class="domo-badge">{label}</span>
                     <h3>{target}</h3>
                     <p>{description}</p>
@@ -1147,6 +1788,12 @@ def render_command_center(posts: pd.DataFrame, action_items: pd.DataFrame) -> No
             if st.button(label, key=f"go_{target}"):
                 st.session_state["page"] = target
                 st.rerun()
+
+    st.subheader("Pulso")
+    cols = st.columns(3)
+    cols[0].metric("Shares", as_percent(avg_share), help="Meta: que la gente lo quiera mandar a alguien.")
+    cols[1].metric("Saves", as_percent(avg_save), help="Meta: que la pieza sea referencia útil.")
+    cols[2].metric("Comentarios", as_percent(avg_comments), help="Meta: conversación real, no solo aplauso.")
 
     suggested = [
         {
@@ -1180,11 +1827,13 @@ def render_command_center(posts: pd.DataFrame, action_items: pd.DataFrame) -> No
         },
     )
     cols = st.columns(4)
-    for col, item in zip(cols, suggested):
+    for index, (col, item) in enumerate(zip(cols, suggested)):
         with col:
+            index_class = ["", "is-blue", "is-pink", "is-orange"][index % 4]
             st.markdown(
                 f"""
                 <div class="domo-action">
+                    <span class="domo-index {index_class}">{index + 1:02d}</span>
                     <span class="domo-pill">{item["priority"]}</span>
                     <strong>{item["title"]}</strong>
                     <p>{item["reason"]}</p>
@@ -1197,12 +1846,6 @@ def render_command_center(posts: pd.DataFrame, action_items: pd.DataFrame) -> No
                 add_action_item(conn, item["title"], item["area"], item["reason"], item["priority"])
                 conn.close()
                 st.success("Acción guardada.")
-
-    st.subheader("Pulso de crecimiento")
-    cols = st.columns(3)
-    cols[0].metric("Share rate", as_percent(avg_share), help="Meta: que la gente lo quiera mandar a alguien.")
-    cols[1].metric("Save rate", as_percent(avg_save), help="Meta: que la pieza sea referencia útil.")
-    cols[2].metric("Comentarios de calidad", as_percent(avg_comments), help="Meta: conversación real, no solo aplauso.")
 
     st.subheader("Acciones guardadas")
     if action_items.empty:
