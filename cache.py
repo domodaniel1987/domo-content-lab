@@ -357,6 +357,27 @@ def insert_rows(conn: sqlite3.Connection | SupabaseConnection, table: str, rows:
     conn.commit()
 
 
+def update_row(conn: sqlite3.Connection | SupabaseConnection, table: str, item_id: int, values: dict[str, Any]) -> None:
+    payload = {key: value for key, value in values.items() if key != "id"}
+    if not payload:
+        return
+    if is_supabase(conn):
+        conn.client.table(table).update(payload).eq("id", item_id).execute()
+        return
+    columns = list(payload.keys())
+    set_sql = ", ".join([f"{column} = ?" for column in columns])
+    conn.execute(f"UPDATE {table} SET {set_sql} WHERE id = ?", [payload[column] for column in columns] + [item_id])
+    conn.commit()
+
+
+def delete_row(conn: sqlite3.Connection | SupabaseConnection, table: str, item_id: int) -> None:
+    if is_supabase(conn):
+        conn.client.table(table).delete().eq("id", item_id).execute()
+        return
+    conn.execute(f"DELETE FROM {table} WHERE id = ?", (item_id,))
+    conn.commit()
+
+
 def enrich_post_row(row: tuple) -> dict[str, Any]:
     data = dict(zip(POST_BASE_COLUMNS, row))
     return enrich_post_record(data)
@@ -553,6 +574,7 @@ def get_content_ideas(conn: sqlite3.Connection | SupabaseConnection):
         order_by="created_at",
         descending=True,
         columns=[
+            "id",
             "pillar",
             "format",
             "title",
@@ -562,6 +584,7 @@ def get_content_ideas(conn: sqlite3.Connection | SupabaseConnection):
             "strategic_reason",
             "priority",
             "linkedin_adaptation",
+            "created_at",
         ],
     )
 

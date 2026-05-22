@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 import json
 import socket
+import html
 from datetime import datetime
 from pathlib import Path
 
@@ -12,6 +13,7 @@ import streamlit as st
 
 import cache as cache_store
 from assistant import (
+    ai_complete,
     analyze_link_for_domo,
     analyze_screenshot_for_domo,
     answer_as_domo_assistant,
@@ -48,6 +50,8 @@ get_screenshots = cache_store.get_screenshots
 get_trend_items = cache_store.get_trend_items
 initialize_database = cache_store.initialize_database
 update_action_status = cache_store.update_action_status
+delete_row = getattr(cache_store, "delete_row", None)
+update_row = getattr(cache_store, "update_row", None)
 
 
 def add_content_idea(conn, idea: dict) -> None:
@@ -83,6 +87,26 @@ def get_supabase_status() -> dict[str, str]:
     }
 
 
+def safe_update_record(table: str, item_id: int, values: dict) -> bool:
+    if update_row is None:
+        st.warning("Actualiza cache.py para poder editar registros.")
+        return False
+    conn = get_connection()
+    update_row(conn, table, int(item_id), values)
+    conn.close()
+    return True
+
+
+def safe_delete_record(table: str, item_id: int) -> bool:
+    if delete_row is None:
+        st.warning("Actualiza cache.py para poder borrar registros.")
+        return False
+    conn = get_connection()
+    delete_row(conn, table, int(item_id))
+    conn.close()
+    return True
+
+
 st.set_page_config(
     page_title="DOMO Content Lab",
     page_icon="D",
@@ -105,44 +129,96 @@ def inject_styles() -> None:
         f"""
         <style>
         :root {{
-            --md-sys-color-primary: #111111;
-            --md-sys-color-on-primary: #fffaf0;
-            --md-sys-color-primary-container: #F4C430;
-            --md-sys-color-on-primary-container: #111111;
-            --md-sys-color-secondary: #145C9E;
-            --md-sys-color-tertiary: #1B998B;
-            --md-sys-color-error: #E53935;
-            --md-sys-color-background: #F5F0E8;
-            --md-sys-color-surface: #fffaf0;
-            --md-sys-color-surface-container: #F8F2E7;
-            --md-sys-color-surface-container-high: #EFE5D7;
-            --md-sys-color-outline: rgba(17, 17, 17, 0.18);
-            --md-sys-color-outline-variant: rgba(17, 17, 17, 0.10);
-            --md-sys-elevation-1: 0 1px 2px rgba(17,17,17,.16), 0 1px 3px rgba(17,17,17,.10);
-            --md-sys-elevation-2: 0 2px 6px rgba(17,17,17,.18), 0 6px 18px rgba(17,17,17,.08);
-            --md-sys-elevation-3: 0 8px 24px rgba(17,17,17,.16), 0 2px 8px rgba(17,17,17,.10);
-            --domo-radius-sm: 10px;
-            --domo-radius-md: 16px;
-            --domo-radius-lg: 24px;
+            --md-sys-color-primary: #063B2D;
+            --md-sys-color-on-primary: #F9F6EE;
+            --md-sys-color-primary-container: #DFF36B;
+            --md-sys-color-on-primary-container: #063B2D;
+            --md-sys-color-secondary: #6C63FF;
+            --md-sys-color-tertiary: #00A8C8;
+            --md-sys-color-error: #F45B69;
+            --md-sys-color-background: #F3F1EA;
+            --md-sys-color-surface: #F9F6EE;
+            --md-sys-color-surface-container: #ECE9DE;
+            --md-sys-color-surface-container-high: #E2DED1;
+            --md-sys-color-outline: rgba(6, 59, 45, 0.16);
+            --md-sys-color-outline-variant: rgba(6, 59, 45, 0.09);
+            --md-sys-elevation-1: 0 1px 0 rgba(6,59,45,.08), 0 10px 24px rgba(6,59,45,.05);
+            --md-sys-elevation-2: 0 1px 0 rgba(6,59,45,.10), 0 16px 34px rgba(6,59,45,.08);
+            --md-sys-elevation-3: 0 1px 0 rgba(6,59,45,.12), 0 24px 48px rgba(6,59,45,.11);
+            --domo-radius-sm: 16px;
+            --domo-radius-md: 22px;
+            --domo-radius-lg: 32px;
+            --domo-ease-out: cubic-bezier(.16, 1, .3, 1);
+            --domo-ease-pop: cubic-bezier(.34, 1.56, .64, 1);
+            --domo-pink: #FF7AC8;
+            --domo-lilac: #9B8CFF;
+            --domo-cyan: #38C9E8;
+            --domo-orange: #F3A83B;
+        }}
+        @keyframes domo-enter {{
+            from {{
+                opacity: 0;
+                transform: translateY(18px) scale(.98);
+                filter: blur(8px);
+            }}
+            to {{
+                opacity: 1;
+                transform: translateY(0) scale(1);
+                filter: blur(0);
+            }}
+        }}
+        @keyframes domo-soft-rise {{
+            from {{
+                opacity: 0;
+                transform: translateY(12px);
+            }}
+            to {{
+                opacity: 1;
+                transform: translateY(0);
+            }}
+        }}
+        @keyframes domo-stamp {{
+            0% {{
+                opacity: 0;
+                transform: rotate(-4deg) scale(.88);
+            }}
+            70% {{
+                opacity: 1;
+                transform: rotate(-1deg) scale(1.04);
+            }}
+            100% {{
+                opacity: 1;
+                transform: rotate(0) scale(1);
+            }}
+        }}
+        @keyframes domo-scan {{
+            from {{
+                transform: translateX(-115%);
+            }}
+            to {{
+                transform: translateX(115%);
+            }}
         }}
         .stApp {{
             background:
-                radial-gradient(circle at 18% 0%, rgba(244,196,48,.18), transparent 28%),
-                linear-gradient(180deg, #F5F0E8 0%, #FBF7EE 52%, #F5F0E8 100%);
+                radial-gradient(circle at 15% 4%, rgba(223,243,107,.38), transparent 20%),
+                radial-gradient(circle at 82% 7%, rgba(56,201,232,.16), transparent 22%),
+                linear-gradient(180deg, #F3F1EA 0%, #F8F5ED 48%, #EFECE1 100%);
             color: var(--md-sys-color-primary);
             font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
         }}
         .block-container {{
-            max-width: 1240px;
-            padding-top: 2.3rem;
+            max-width: 1320px;
+            padding-top: 1.7rem;
             padding-bottom: 4rem;
+            animation: domo-enter .62s var(--domo-ease-out) both;
         }}
         h1 {{
             letter-spacing: 0 !important;
-            font-weight: 900 !important;
-            text-transform: uppercase;
-            line-height: .96 !important;
-            font-size: clamp(2.4rem, 5.4vw, 5.3rem) !important;
+            font-weight: 850 !important;
+            text-transform: none;
+            line-height: 1.02 !important;
+            font-size: clamp(2.15rem, 4.4vw, 4.4rem) !important;
             max-width: 980px;
         }}
         h2, h3 {{
@@ -160,8 +236,9 @@ def inject_styles() -> None:
             line-height: 1.55;
         }}
         [data-testid="stHeader"] {{
-            background: rgba(17,17,17,.94);
-            backdrop-filter: blur(14px);
+            background: rgba(243,241,234,.72);
+            backdrop-filter: blur(18px);
+            border-bottom: 1px solid rgba(6,59,45,.08);
         }}
         [data-testid="stToolbar"] {{
             right: 1rem;
@@ -169,17 +246,24 @@ def inject_styles() -> None:
         [data-testid="stMetric"] {{
             background: var(--md-sys-color-surface);
             border: 1px solid var(--md-sys-color-outline-variant);
-            border-radius: var(--domo-radius-md);
-            padding: 16px 18px;
+            border-radius: 28px;
+            padding: 18px 20px;
             box-shadow: var(--md-sys-elevation-1);
+            animation: domo-soft-rise .48s var(--domo-ease-out) both;
+            transition: transform .22s var(--domo-ease-out), box-shadow .22s var(--domo-ease-out);
+        }}
+        [data-testid="stMetric"]:hover {{
+            transform: translateY(-3px);
+            box-shadow: var(--md-sys-elevation-2);
         }}
         [data-testid="stMetric"] * {{
             color: var(--md-sys-color-primary) !important;
         }}
         [data-testid="stMetricValue"] {{
-            color: var(--md-sys-color-primary) !important;
+            color: #033B2A !important;
             font-weight: 900 !important;
-            font-size: clamp(1.8rem, 3vw, 2.7rem) !important;
+            font-size: clamp(2.2rem, 4vw, 4.2rem) !important;
+            letter-spacing: -0.02em !important;
         }}
         div[data-testid="stDataFrame"] {{
             border: 1px solid var(--md-sys-color-outline-variant);
@@ -189,23 +273,36 @@ def inject_styles() -> None:
         }}
         div[data-testid="stExpander"] {{
             border: 1px solid var(--md-sys-color-outline-variant);
-            border-radius: var(--domo-radius-md);
+            border-radius: 26px;
             box-shadow: var(--md-sys-elevation-1);
             background: var(--md-sys-color-surface);
+            animation: domo-soft-rise .44s var(--domo-ease-out) both;
+            transition: transform .22s var(--domo-ease-out), box-shadow .22s var(--domo-ease-out);
+        }}
+        div[data-testid="stExpander"]:hover {{
+            transform: translateY(-2px);
+            box-shadow: var(--md-sys-elevation-2);
         }}
         input, textarea, [data-baseweb="select"] > div, [data-baseweb="input"] > div {{
-            border-radius: 14px !important;
+            border-radius: 999px !important;
+            background: rgba(249,246,238,.88) !important;
+            border-color: rgba(6,59,45,.08) !important;
+        }}
+        textarea {{
+            border-radius: 22px !important;
         }}
         .domo-hero {{
             background:
-                linear-gradient(135deg, rgba(17,17,17,.97) 0%, rgba(17,17,17,.92) 56%, rgba(20,92,158,.92) 100%);
-            color: var(--md-sys-color-on-primary);
-            border-radius: var(--domo-radius-lg);
-            padding: clamp(22px, 4vw, 42px);
-            box-shadow: var(--md-sys-elevation-3);
-            margin-bottom: 28px;
+                linear-gradient(135deg, rgba(249,246,238,.96) 0%, rgba(236,233,222,.94) 100%);
+            color: var(--md-sys-color-primary);
+            border: 1px solid rgba(6,59,45,.10);
+            border-radius: 36px;
+            padding: clamp(22px, 4vw, 38px);
+            box-shadow: var(--md-sys-elevation-2);
+            margin-bottom: 24px;
             position: relative;
             overflow: hidden;
+            animation: domo-enter .78s var(--domo-ease-out) both;
         }}
         .domo-hero:after {{
             content: "";
@@ -213,52 +310,109 @@ def inject_styles() -> None:
             inset: auto -24px -24px auto;
             width: 180px;
             height: 180px;
-            border: 2px solid rgba(244,196,48,.55);
+            border: 2px dashed rgba(6,59,45,.18);
+            border-radius: 36px;
             transform: rotate(-8deg);
+            animation: domo-stamp .7s var(--domo-ease-pop) .18s both;
+        }}
+        .domo-hero:before {{
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(90deg, transparent, rgba(223,243,107,.24), transparent);
+            animation: domo-scan 1.2s var(--domo-ease-out) .2s both;
+            pointer-events: none;
         }}
         .domo-hero h1 {{
-            color: var(--md-sys-color-on-primary) !important;
+            color: var(--md-sys-color-primary) !important;
             margin: 16px 0 16px;
         }}
+        .domo-topbar {{
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 18px;
+        }}
+        .domo-search-pill {{
+            background: rgba(255,255,255,.70);
+            border: 1px solid rgba(6,59,45,.10);
+            border-radius: 999px;
+            padding: 10px 16px;
+            min-width: min(420px, 100%);
+            color: rgba(6,59,45,.56);
+            font-size: .92rem;
+            box-shadow: var(--md-sys-elevation-1);
+        }}
+        .domo-avatar {{
+            width: 40px;
+            height: 40px;
+            border-radius: 999px;
+            background: var(--md-sys-color-primary);
+            color: var(--md-sys-color-on-primary);
+            display: grid;
+            place-items: center;
+            font-weight: 900;
+            box-shadow: var(--md-sys-elevation-1);
+        }}
         .domo-hero p {{
-            color: rgba(255,250,240,.86) !important;
+            color: rgba(6,59,45,.72) !important;
             max-width: 850px;
             font-size: 1.08rem;
             margin: 0;
         }}
         .domo-hero-grid {{
             display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
+            grid-template-columns: repeat(4, minmax(0, 1fr));
             gap: 10px;
             margin-top: 24px;
             max-width: 880px;
         }}
         .domo-hero-chip {{
-            background: rgba(255,250,240,.10);
-            border: 1px solid rgba(255,250,240,.16);
+            background: rgba(255,255,255,.52);
+            border: 1px solid rgba(6,59,45,.10);
             border-radius: 999px;
-            color: #fffaf0;
+            color: var(--md-sys-color-primary);
             padding: 10px 14px;
             font-weight: 800;
             text-align: center;
+            transition: transform .2s var(--domo-ease-pop), background .2s var(--domo-ease-out), border-color .2s var(--domo-ease-out);
+        }}
+        .domo-hero-chip:nth-child(1) {{
+            background: #DFF36B;
+        }}
+        .domo-hero-chip:nth-child(2) {{
+            background: #FFD36E;
+        }}
+        .domo-hero-chip:nth-child(3) {{
+            background: #FF9EDB;
+        }}
+        .domo-hero-chip:nth-child(4) {{
+            background: #88E7F7;
+        }}
+        .domo-hero-chip:hover {{
+            transform: translateY(-2px) scale(1.02);
+            background: rgba(223,243,107,.50);
+            border-color: rgba(6,59,45,.16);
         }}
         .domo-label {{
             display: inline-block;
             background: var(--md-sys-color-primary-container);
             color: var(--md-sys-color-on-primary-container);
-            border: 1px solid rgba(17,17,17,.25);
+            border: 1px solid rgba(6,59,45,.12);
             border-radius: 999px;
             padding: 7px 12px;
             font-weight: 900;
-            text-transform: uppercase;
+            text-transform: none;
             margin-bottom: 8px;
             font-size: .82rem;
-            box-shadow: 0 1px 0 rgba(17,17,17,.22);
+            box-shadow: var(--md-sys-elevation-1);
+            animation: domo-stamp .45s var(--domo-ease-pop) both;
         }}
         .domo-note {{
-            border-left: 7px solid var(--md-sys-color-error);
+            border-left: 7px solid var(--domo-pink);
             background: var(--md-sys-color-surface);
-            border-radius: 0 var(--domo-radius-md) var(--domo-radius-md) 0;
+            border-radius: 0 24px 24px 0;
             padding: 16px 18px;
             font-size: 1rem;
             box-shadow: var(--md-sys-elevation-1);
@@ -266,15 +420,17 @@ def inject_styles() -> None:
         .domo-action {{
             background: var(--md-sys-color-surface);
             border: 1px solid var(--md-sys-color-outline-variant);
-            border-radius: var(--domo-radius-md);
+            border-radius: 30px;
             padding: 18px;
             min-height: 168px;
             box-shadow: var(--md-sys-elevation-1);
-            transition: transform .14s ease, box-shadow .14s ease;
+            animation: domo-soft-rise .5s var(--domo-ease-out) both;
+            transition: transform .22s var(--domo-ease-out), box-shadow .22s var(--domo-ease-out), border-color .22s var(--domo-ease-out);
         }}
         .domo-action:hover {{
-            transform: translateY(-2px);
+            transform: translateY(-4px) scale(1.01);
             box-shadow: var(--md-sys-elevation-2);
+            border-color: rgba(6,59,45,.18);
         }}
         .domo-action strong {{
             display: block;
@@ -284,30 +440,46 @@ def inject_styles() -> None:
         }}
         .domo-action p {{
             margin-bottom: 0;
-            color: rgba(17,17,17,.72);
+            color: rgba(6,59,45,.70);
         }}
         .domo-launch {{
-            background: var(--md-sys-color-primary);
-            color: var(--md-sys-color-on-primary);
-            border-radius: var(--domo-radius-lg);
-            border: 1px solid rgba(255,250,240,.10);
-            box-shadow: var(--md-sys-elevation-2);
+            background: var(--md-sys-color-surface);
+            color: var(--md-sys-color-primary);
+            border-radius: 32px;
+            border: 1px solid rgba(6,59,45,.10);
+            box-shadow: var(--md-sys-elevation-1);
             padding: 20px;
             min-height: 175px;
             margin-bottom: 12px;
-            transition: transform .14s ease, box-shadow .14s ease;
+            position: relative;
+            overflow: hidden;
+            animation: domo-soft-rise .52s var(--domo-ease-out) both;
+            transition: transform .24s var(--domo-ease-out), box-shadow .24s var(--domo-ease-out), border-color .24s var(--domo-ease-out);
+        }}
+        .domo-launch:before {{
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(90deg, transparent, rgba(223,243,107,.32), transparent);
+            transform: translateX(-120%);
+            transition: transform .62s var(--domo-ease-out);
+            pointer-events: none;
         }}
         .domo-launch:hover {{
-            transform: translateY(-2px);
-            box-shadow: var(--md-sys-elevation-3);
+            transform: translateY(-5px) scale(1.012);
+            box-shadow: var(--md-sys-elevation-2);
+            border-color: rgba(6,59,45,.18);
+        }}
+        .domo-launch:hover:before {{
+            transform: translateX(120%);
         }}
         .domo-launch h3 {{
-            color: var(--md-sys-color-on-primary) !important;
+            color: var(--md-sys-color-primary) !important;
             margin: 8px 0;
             font-size: 1.15rem;
         }}
         .domo-launch p {{
-            color: rgba(255,250,240,.82) !important;
+            color: rgba(6,59,45,.68) !important;
             margin: 0;
         }}
         .domo-launch .domo-badge {{
@@ -316,8 +488,8 @@ def inject_styles() -> None:
         }}
         .domo-pill {{
             display: inline-block;
-            background: var(--md-sys-color-error);
-            color: white;
+            background: var(--domo-pink);
+            color: #250018;
             border-radius: 999px;
             padding: 4px 9px;
             font-weight: 900;
@@ -327,10 +499,11 @@ def inject_styles() -> None:
         .domo-output {{
             background: var(--md-sys-color-surface);
             border: 1px solid var(--md-sys-color-outline-variant);
-            border-radius: var(--domo-radius-lg);
-            box-shadow: var(--md-sys-elevation-2);
+            border-radius: 32px;
+            box-shadow: var(--md-sys-elevation-1);
             padding: 22px;
             margin: 18px 0;
+            animation: domo-enter .5s var(--domo-ease-out) both;
         }}
         .domo-output-top {{
             display: flex;
@@ -341,20 +514,20 @@ def inject_styles() -> None:
         }}
         .domo-badge {{
             display: inline-block;
-            border: 1px solid rgba(17,17,17,.18);
+            border: 1px solid rgba(6,59,45,.12);
             background: var(--md-sys-color-primary-container);
             color: var(--md-sys-color-on-primary-container);
             border-radius: 999px;
             padding: 5px 10px;
             font-weight: 900;
-            text-transform: uppercase;
+            text-transform: none;
             font-size: 0.82rem;
         }}
         .domo-slide {{
             background:
-                linear-gradient(160deg, #111111 0%, #202124 68%, #145C9E 100%);
+                linear-gradient(160deg, #063B2D 0%, #0C513F 72%, #00A8C8 100%);
             color: var(--md-sys-color-on-primary);
-            border-radius: var(--domo-radius-lg);
+            border-radius: 34px;
             padding: 22px;
             min-height: 230px;
             display: flex;
@@ -363,11 +536,17 @@ def inject_styles() -> None:
             border: 1px solid rgba(255,250,240,.10);
             box-shadow: var(--md-sys-elevation-3);
             margin-bottom: 16px;
+            animation: domo-enter .5s var(--domo-ease-out) both;
+            transition: transform .24s var(--domo-ease-out), box-shadow .24s var(--domo-ease-out);
+        }}
+        .domo-slide:hover {{
+            transform: translateY(-3px) rotate(-.25deg);
+            box-shadow: 0 14px 36px rgba(17,17,17,.22), 0 2px 8px rgba(17,17,17,.12);
         }}
         .domo-slide-number {{
             color: var(--md-sys-color-primary-container);
             font-weight: 900;
-            text-transform: uppercase;
+            text-transform: none;
             font-size: 0.86rem;
         }}
         .domo-slide-text {{
@@ -390,15 +569,21 @@ def inject_styles() -> None:
         .domo-step {{
             background: var(--md-sys-color-surface-container);
             border: 1px solid var(--md-sys-color-outline-variant);
-            border-radius: var(--domo-radius-md);
+            border-radius: 28px;
             padding: 18px;
             min-height: 150px;
             box-shadow: var(--md-sys-elevation-1);
+            animation: domo-soft-rise .48s var(--domo-ease-out) both;
+            transition: transform .22s var(--domo-ease-out), box-shadow .22s var(--domo-ease-out);
+        }}
+        .domo-step:hover {{
+            transform: translateY(-3px);
+            box-shadow: var(--md-sys-elevation-2);
         }}
         .domo-step-number {{
             display: inline-block;
-            background: var(--md-sys-color-primary);
-            color: var(--md-sys-color-on-primary);
+            background: var(--md-sys-color-primary-container);
+            color: var(--md-sys-color-on-primary-container);
             border-radius: 999px;
             min-width: 28px;
             height: 28px;
@@ -407,6 +592,18 @@ def inject_styles() -> None:
             font-weight: 900;
             margin-bottom: 10px;
         }}
+        .domo-step:nth-child(1) .domo-step-number {{
+            background: #DFF36B;
+        }}
+        .domo-step:nth-child(2) .domo-step-number {{
+            background: #FFD36E;
+        }}
+        .domo-step:nth-child(3) .domo-step-number {{
+            background: #FF9EDB;
+        }}
+        .domo-step:nth-child(4) .domo-step-number {{
+            background: #88E7F7;
+        }}
         .domo-step h3 {{
             font-size: 1rem;
             margin: 2px 0 8px;
@@ -414,10 +611,16 @@ def inject_styles() -> None:
         .domo-read {{
             background: var(--md-sys-color-surface);
             border: 1px solid var(--md-sys-color-outline-variant);
-            border-radius: var(--domo-radius-lg);
+            border-radius: 30px;
             padding: 22px;
-            box-shadow: var(--md-sys-elevation-2);
+            box-shadow: var(--md-sys-elevation-1);
             min-height: 170px;
+            animation: domo-soft-rise .5s var(--domo-ease-out) both;
+            transition: transform .22s var(--domo-ease-out), box-shadow .22s var(--domo-ease-out);
+        }}
+        .domo-read:hover {{
+            transform: translateY(-3px);
+            box-shadow: var(--md-sys-elevation-3);
         }}
         .domo-read strong {{
             display: block;
@@ -426,29 +629,81 @@ def inject_styles() -> None:
         }}
         .domo-callout {{
             background: var(--md-sys-color-primary-container);
-            border: 1px solid rgba(17,17,17,.18);
-            border-radius: var(--domo-radius-lg);
-            box-shadow: var(--md-sys-elevation-2);
+            border: 1px solid rgba(6,59,45,.12);
+            border-radius: 999px;
+            box-shadow: var(--md-sys-elevation-1);
             padding: 20px;
             margin: 12px 0 22px;
             font-weight: 800;
+            animation: domo-enter .46s var(--domo-ease-out) both;
+        }}
+        .domo-chat-shell {{
+            background: var(--md-sys-color-surface);
+            border: 1px solid var(--md-sys-color-outline-variant);
+            border-radius: 34px;
+            padding: clamp(16px, 3vw, 26px);
+            box-shadow: var(--md-sys-elevation-1);
+            margin: 16px 0;
+            animation: domo-enter .5s var(--domo-ease-out) both;
+        }}
+        .domo-chat-user,
+        .domo-chat-assistant {{
+            border-radius: 22px;
+            padding: 14px 16px;
+            margin: 10px 0;
+            max-width: 88%;
+            box-shadow: var(--md-sys-elevation-1);
+            animation: domo-soft-rise .32s var(--domo-ease-out) both;
+        }}
+        .domo-chat-user {{
+            margin-left: auto;
+            background: var(--md-sys-color-primary);
+            color: var(--md-sys-color-on-primary);
+        }}
+        .domo-chat-assistant {{
+            margin-right: auto;
+            background: var(--md-sys-color-surface-container);
+            color: var(--md-sys-color-primary);
+            border: 1px solid var(--md-sys-color-outline-variant);
+        }}
+        .domo-chat-user strong,
+        .domo-chat-assistant strong {{
+            display: block;
+            font-size: .76rem;
+            letter-spacing: .02em;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+            opacity: .75;
+        }}
+        .domo-chip-row {{
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin: 12px 0 6px;
+        }}
+        .domo-memory-card {{
+            background: var(--md-sys-color-surface-container);
+            border: 1px solid var(--md-sys-color-outline-variant);
+            border-radius: 26px;
+            padding: 14px;
+            margin: 8px 0;
         }}
         .domo-small {{
             font-size: 0.92rem;
             opacity: 0.86;
         }}
         .domo-section {{
-            background: rgba(255,250,240,.72);
+            background: rgba(249,246,238,.74);
             border: 1px solid var(--md-sys-color-outline-variant);
-            border-radius: var(--domo-radius-lg);
+            border-radius: 34px;
             padding: clamp(16px, 3vw, 26px);
             box-shadow: var(--md-sys-elevation-1);
             margin: 18px 0;
         }}
         section[data-testid="stSidebar"] {{
-            background: rgba(255,250,240,.96);
+            background: rgba(243,241,234,.94);
             border-right: 1px solid var(--md-sys-color-outline-variant);
-            box-shadow: var(--md-sys-elevation-2);
+            box-shadow: var(--md-sys-elevation-1);
         }}
         section[data-testid="stSidebar"] * {{
             color: var(--md-sys-color-primary) !important;
@@ -456,7 +711,7 @@ def inject_styles() -> None:
         section[data-testid="stSidebar"] code {{
             color: var(--md-sys-color-tertiary) !important;
             background: var(--md-sys-color-primary) !important;
-            border-radius: 12px;
+            border-radius: 18px;
             padding: 8px !important;
         }}
         section[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] h3 {{
@@ -466,11 +721,16 @@ def inject_styles() -> None:
         }}
         div[role="radiogroup"] label {{
             color: var(--md-sys-color-primary) !important;
-            font-weight: 760 !important;
+            font-weight: 720 !important;
             opacity: 1 !important;
             border-radius: 999px !important;
             padding: 8px 10px !important;
             min-height: 42px;
+            transition: transform .18s var(--domo-ease-out), background .18s var(--domo-ease-out);
+        }}
+        div[role="radiogroup"] label:hover {{
+            transform: translateX(3px);
+            background: rgba(223,243,107,.30);
         }}
         div[role="radiogroup"] p {{
             color: var(--md-sys-color-primary) !important;
@@ -480,23 +740,30 @@ def inject_styles() -> None:
             color: var(--md-sys-color-on-primary) !important;
             border: 0 !important;
             border-radius: 999px !important;
-            font-weight: 850 !important;
+            font-weight: 800 !important;
             min-height: 42px;
             padding: 0 18px !important;
             box-shadow: var(--md-sys-elevation-1);
-            transition: transform .12s ease, box-shadow .12s ease, background .12s ease;
+            transition: transform .16s var(--domo-ease-pop), box-shadow .16s var(--domo-ease-out), background .16s var(--domo-ease-out);
         }}
         .stButton > button:hover {{
-            transform: translateY(-1px);
+            transform: translateY(-2px) scale(1.015);
             box-shadow: var(--md-sys-elevation-2);
-            background: #2B2B2B !important;
+            background: #09513E !important;
+        }}
+        .stButton > button:active {{
+            transform: translateY(0) scale(.98);
+        }}
+        .stButton > button:focus-visible {{
+            outline: 3px solid rgba(223,243,107,.9) !important;
+            outline-offset: 3px !important;
         }}
         .stButton > button * {{
             color: var(--md-sys-color-on-primary) !important;
         }}
         button[kind="primary"], .stDownloadButton > button {{
-            background: var(--md-sys-color-secondary) !important;
-            color: white !important;
+            background: var(--md-sys-color-primary-container) !important;
+            color: var(--md-sys-color-on-primary-container) !important;
         }}
         .stTabs [data-baseweb="tab-list"] {{
             gap: 8px;
@@ -509,14 +776,46 @@ def inject_styles() -> None:
             border-radius: 999px;
             padding: 8px 16px;
             font-weight: 800;
+            transition: transform .18s var(--domo-ease-out), background .18s var(--domo-ease-out), box-shadow .18s var(--domo-ease-out);
+        }}
+        .stTabs [data-baseweb="tab"]:hover {{
+            transform: translateY(-1px);
         }}
         .stTabs [aria-selected="true"] {{
             background: var(--md-sys-color-surface);
             box-shadow: var(--md-sys-elevation-1);
         }}
         a {{
-            color: var(--md-sys-color-secondary) !important;
+            color: var(--md-sys-color-tertiary) !important;
             font-weight: 800;
+        }}
+        .domo-step:nth-of-type(2),
+        .domo-action:nth-of-type(2),
+        .domo-launch:nth-of-type(2),
+        .domo-slide:nth-of-type(2) {{
+            animation-delay: .05s;
+        }}
+        .domo-step:nth-of-type(3),
+        .domo-action:nth-of-type(3),
+        .domo-launch:nth-of-type(3),
+        .domo-slide:nth-of-type(3) {{
+            animation-delay: .1s;
+        }}
+        .domo-step:nth-of-type(4),
+        .domo-action:nth-of-type(4),
+        .domo-launch:nth-of-type(4),
+        .domo-slide:nth-of-type(4) {{
+            animation-delay: .15s;
+        }}
+        @media (prefers-reduced-motion: reduce) {{
+            *,
+            *::before,
+            *::after {{
+                animation-duration: .01ms !important;
+                animation-iteration-count: 1 !important;
+                scroll-behavior: auto !important;
+                transition-duration: .01ms !important;
+            }}
         }}
         @media (max-width: 760px) {{
             .block-container {{
@@ -544,6 +843,13 @@ def inject_styles() -> None:
             }}
             .domo-hero-grid {{
                 grid-template-columns: 1fr;
+            }}
+            .domo-topbar {{
+                align-items: stretch;
+            }}
+            .domo-search-pill {{
+                min-width: 0;
+                flex: 1;
             }}
             .stTabs [data-baseweb="tab-list"] {{
                 width: 100%;
@@ -729,6 +1035,10 @@ def render_header() -> None:
     st.markdown(
         """
         <div class="domo-hero">
+            <div class="domo-topbar">
+                <div class="domo-search-pill">Buscar idea, marca, métrica o próximo movimiento</div>
+                <div class="domo-avatar">D</div>
+            </div>
             <span class="domo-label">DOMO Content Lab</span>
             <h1>Asistente de crecimiento visual</h1>
             <p>
@@ -739,6 +1049,7 @@ def render_header() -> None:
             <div class="domo-hero-grid">
                 <div class="domo-hero-chip">Leer métricas</div>
                 <div class="domo-hero-chip">Crear contenido</div>
+                <div class="domo-hero-chip">Buscar collabs</div>
                 <div class="domo-hero-chip">Guardar aprendizaje</div>
             </div>
         </div>
@@ -811,13 +1122,13 @@ def render_command_center(posts: pd.DataFrame, action_items: pd.DataFrame) -> No
             )
 
     launchers = [
-        ("Lectura", "Qué pasó", "Diagnóstico de métricas: pegó, no pegó y próximo movimiento."),
-        ("Carruseles", "Frases por imagen", "Convierte una idea o link en slides listos para diseñar."),
-        ("Asistente", "Estrategia rápida", "Pregúntale qué publicar, repetir o convertir en negocio."),
-        ("Inspiración", "Analizar link", "Pega algo que viste y tradúcelo a estilo DOMO."),
-        ("Capturas", "Subir métricas", "Guarda screenshots y números para crear memoria."),
-        ("Trends", "Radar web", "Busca señales de tu rama para ideas y oportunidades."),
-        ("Collabs", "Marcas cool", "Encuentra con quién acercarte y cómo hacerlo."),
+        ("Ideas", "Crear idea", "Reels, carruseles, branding, foto, INHAUS, mockups y LinkedIn."),
+        ("Lectura", "Qué pegó", "Diagnóstico claro: qué funcionó, qué no y qué corregir."),
+        ("Carruseles", "Hacer slides", "Frases por imagen listas para copiar y diseñar."),
+        ("Asistente", "Preguntar", "Dile una duda y responde como estratega DOMO."),
+        ("Inspiración", "Pegar link", "Convierte algo que viste en una idea a tu estilo."),
+        ("Capturas", "Subir data", "Guarda screenshots y números para crear memoria."),
+        ("Collabs", "Buscar marcas", "Encuentra oportunidades y redacta un mensaje de acercamiento."),
     ]
 
     cols = st.columns(3)
@@ -833,7 +1144,7 @@ def render_command_center(posts: pd.DataFrame, action_items: pd.DataFrame) -> No
                 """,
                 unsafe_allow_html=True,
             )
-            if st.button(f"Ir a {target}", key=f"go_{target}"):
+            if st.button(label, key=f"go_{target}"):
                 st.session_state["page"] = target
                 st.rerun()
 
@@ -912,6 +1223,17 @@ def render_command_center(posts: pd.DataFrame, action_items: pd.DataFrame) -> No
                 update_action_status(conn, int(row["id"]), row["status"])
             conn.close()
             st.success("Estados actualizados.")
+        delete_options = {
+            f"{row['id']} · {row['title']}": int(row["id"])
+            for _, row in action_items.iterrows()
+            if "id" in action_items.columns
+        }
+        if delete_options:
+            selected_action = st.selectbox("Borrar acción", ["Selecciona"] + list(delete_options.keys()))
+            if selected_action != "Selecciona" and st.button("Borrar acción seleccionada"):
+                safe_delete_record("action_items", delete_options[selected_action])
+                st.success("Acción borrada.")
+                st.rerun()
 
 
 def render_summary(posts: pd.DataFrame, profile: pd.DataFrame) -> None:
@@ -1231,11 +1553,34 @@ def render_capture_lab(posts: pd.DataFrame, screenshots: pd.DataFrame) -> None:
     if screenshots.empty:
         st.info("Todavía no hay capturas guardadas.")
     else:
-        st.dataframe(
-            screenshots[["date", "platform", "content_title", "notes", "ai_reading", "created_at"]],
-            hide_index=True,
-            use_container_width=True,
-        )
+        for _, row in screenshots.head(20).iterrows():
+            row_id = row.get("id")
+            with st.expander(f"{row.get('date', '')} · {row.get('content_title', 'Captura')}"):
+                with st.form(f"edit_screenshot_{row_id}"):
+                    edit_date = st.text_input("Fecha", value=str(row.get("date", "")))
+                    edit_platform = st.text_input("Plataforma", value=str(row.get("platform", "")))
+                    edit_title = st.text_input("Contenido", value=str(row.get("content_title", "")))
+                    edit_notes = st.text_area("Observaciones", value=str(row.get("notes", "")), height=100)
+                    edit_ai = st.text_area("Lectura IA", value=str(row.get("ai_reading", "")), height=120)
+                    save_capture = st.form_submit_button("Guardar cambios")
+                if save_capture and row_id is not None:
+                    safe_update_record(
+                        "screenshots",
+                        int(row_id),
+                        {
+                            "date": edit_date,
+                            "platform": edit_platform,
+                            "content_title": edit_title,
+                            "notes": edit_notes,
+                            "ai_reading": edit_ai,
+                        },
+                    )
+                    st.success("Captura actualizada.")
+                    st.rerun()
+                if st.button("Borrar captura", key=f"delete_capture_{row_id}"):
+                    safe_delete_record("screenshots", int(row_id))
+                    st.success("Captura borrada.")
+                    st.rerun()
 
 
 def render_inspiration_lab(posts: pd.DataFrame, inspirations: pd.DataFrame) -> None:
@@ -1267,11 +1612,41 @@ def render_inspiration_lab(posts: pd.DataFrame, inspirations: pd.DataFrame) -> N
     if inspirations.empty:
         st.info("Todavía no hay links guardados.")
     else:
-        st.dataframe(
-            inspirations[["title", "url", "domo_angle", "suggested_content", "created_at"]],
-            hide_index=True,
-            use_container_width=True,
-        )
+        for _, row in inspirations.head(20).iterrows():
+            row_id = row.get("id")
+            with st.expander(f"{row.get('title', 'Link guardado')}"):
+                with st.form(f"edit_inspiration_{row_id}"):
+                    edit_title = st.text_input("Título", value=str(row.get("title", "")))
+                    edit_url = st.text_input("Link", value=str(row.get("url", "")))
+                    edit_notes = st.text_area("Observaciones", value=str(row.get("source_notes", "")), height=90)
+                    edit_angle = st.text_area("Lectura DOMO", value=str(row.get("domo_angle", "")), height=110)
+                    edit_content = st.text_area("Idea de contenido", value=str(row.get("suggested_content", "")), height=110)
+                    save_inspiration = st.form_submit_button("Guardar cambios")
+                if save_inspiration and row_id is not None:
+                    safe_update_record(
+                        "inspirations",
+                        int(row_id),
+                        {
+                            "title": edit_title,
+                            "url": edit_url,
+                            "source_notes": edit_notes,
+                            "domo_angle": edit_angle,
+                            "suggested_content": edit_content,
+                        },
+                    )
+                    st.success("Inspiración actualizada.")
+                    st.rerun()
+                col_car, col_delete = st.columns(2)
+                with col_car:
+                    if st.button("Usar en carrusel", key=f"inspo_carousel_{row_id}"):
+                        st.session_state["page"] = "Carruseles"
+                        st.session_state["carousel_seed"] = f"{edit_title}\n{edit_angle}\n{edit_content}"
+                        st.rerun()
+                with col_delete:
+                    if st.button("Borrar inspiración", key=f"delete_inspiration_{row_id}"):
+                        safe_delete_record("inspirations", int(row_id))
+                        st.success("Inspiración borrada.")
+                        st.rerun()
 
 
 def render_trend_lab(posts: pd.DataFrame, trends: pd.DataFrame) -> None:
@@ -1282,11 +1657,12 @@ def render_trend_lab(posts: pd.DataFrame, trends: pd.DataFrame) -> None:
         query = st.selectbox("Búsqueda sugerida", DEFAULT_TREND_QUERIES)
         custom_query = st.text_input("O escribe tu propia búsqueda", placeholder="Ej: marcas cool Ecuador diseño editorial")
         limit = st.slider("Resultados", min_value=3, max_value=10, value=5)
+        include_instagram = st.checkbox("Incluir resultados públicos de Instagram si aparecen en la web", value=True)
         submitted = st.form_submit_button("Buscar trends", type="primary")
 
     if submitted:
         final_query = custom_query.strip() or query
-        results = scout_trends(final_query, posts, limit=limit)
+        results = scout_trends(final_query, posts, limit=limit, include_instagram=include_instagram)
         if not results:
             st.warning("No encontré resultados ahora. Prueba con una búsqueda más amplia.")
         conn = get_connection()
@@ -1322,46 +1698,166 @@ def render_trend_lab(posts: pd.DataFrame, trends: pd.DataFrame) -> None:
 
 def render_collab_lab(posts: pd.DataFrame, collabs: pd.DataFrame) -> None:
     st.subheader("Collabs y marcas")
-    st.write("Encuentra tipos de marcas, espacios y personas con las que DOMO debería interactuar.")
+    st.write("Busca prospectos, guarda marcas y redacta un mensaje con una idea concreta para acercarte.")
 
-    col_a, col_b = st.columns([2, 1])
-    with col_a:
-        focus = st.text_input("Qué tipo de collab quieres buscar", value="marcas cool de diseño, gastronomía, cultura y lifestyle")
-    with col_b:
-        generate = st.button("Sugerir collabs", type="primary")
+    mode = st.radio(
+        "Qué quieres hacer",
+        ["Buscar marcas", "Agregar manual", "Ver oportunidades"],
+        horizontal=True,
+    )
 
-    if generate:
-        suggestions = suggest_collabs(focus, posts)
-        conn = get_connection()
-        for item in suggestions:
-            add_collab_target(
-                conn,
-                item["name"],
-                item["category"],
-                item["why_fit"],
-                item["approach"],
-                item["priority"],
-                item.get("url", ""),
+    if mode == "Buscar marcas":
+        col_a, col_b, col_c = st.columns([2, 1, 1])
+        with col_a:
+            focus = st.text_input(
+                "Búsqueda",
+                value="marcas Ecuador Cuenca diseño restaurantes hoteles moda cultura visual",
+                help="La app busca en la web. Si Instagram no deja buscar directo, intenta encontrar perfiles públicos indexados.",
             )
-        conn.close()
-        st.success("Sugerencias guardadas.")
-        for item in suggestions:
-            with st.container(border=True):
-                st.markdown(f"### {item['name']}")
-                st.markdown(f"**Categoría:** {item['category']}")
-                st.markdown(f"**Por qué encaja:** {item['why_fit']}")
-                st.markdown(f"**Cómo acercarte:** {item['approach']}")
-                st.markdown(f"**Prioridad:** {item['priority']}")
+        with col_b:
+            limit = st.slider("Resultados", 3, 8, 5, key="collab_limit")
+        with col_c:
+            include_instagram = st.checkbox("Instagram web", value=True)
+            search = st.button("Buscar prospectos", type="primary")
 
-    st.markdown("#### Lista de oportunidades")
+        if search:
+            results = scout_trends(focus, posts, limit=limit, include_instagram=include_instagram)
+            if not results:
+                st.warning("No encontré prospectos ahora. Prueba una búsqueda más específica: sector + ciudad + marca.")
+            for index, item in enumerate(results):
+                title = item.get("title", "Prospecto")
+                reading = item.get("domo_reading", "")
+                with st.container(border=True):
+                    st.markdown(f"### {title}")
+                    st.caption(item.get("source", ""))
+                    st.write(reading)
+                    st.link_button("Abrir fuente", item.get("url", "https://google.com"))
+                    if st.button("Guardar como oportunidad", key=f"save_web_collab_{index}_{title}"):
+                        conn = get_connection()
+                        add_collab_target(
+                            conn,
+                            title[:120],
+                            focus,
+                            reading or "Posible oportunidad detectada por búsqueda web.",
+                            "Investigar perfil, preparar idea visual y escribir con propuesta concreta.",
+                            "Media",
+                            item.get("url", ""),
+                        )
+                        conn.close()
+                        st.success("Oportunidad guardada.")
+
+        st.markdown("#### También puedo sugerir tipos de marcas")
+        if st.button("Sugerir categorías de collab"):
+            suggestions = suggest_collabs(focus, posts)
+            conn = get_connection()
+            for item in suggestions:
+                add_collab_target(
+                    conn,
+                    item["name"],
+                    item["category"],
+                    item["why_fit"],
+                    item["approach"],
+                    item["priority"],
+                    item.get("url", ""),
+                )
+            conn.close()
+            st.success("Sugerencias guardadas.")
+
+    if mode == "Agregar manual":
+        with st.form("manual_collab_form"):
+            name = st.text_input("Marca / persona / empresa")
+            url = st.text_input("Link web o Instagram", placeholder="https://instagram.com/...")
+            category = st.selectbox(
+                "Categoría",
+                ["Restaurante / café", "Hotel / turismo", "Moda", "Arquitectura / interiorismo", "Cultura / evento", "Marca local", "Agencia / estudio", "Otra"],
+            )
+            why_fit = st.text_area("Por qué encaja con DOMO")
+            idea = st.text_area("Idea de colaboración", placeholder="Ej: mini campaña editorial + reel de proceso + carrusel de lectura visual.")
+            priority = st.selectbox("Prioridad", ["Alta", "Media", "Baja"])
+            save_manual = st.form_submit_button("Guardar oportunidad", type="primary")
+        if save_manual and name:
+            conn = get_connection()
+            add_collab_target(conn, name, category, why_fit, idea, priority, url)
+            conn.close()
+            st.success("Oportunidad guardada.")
+
+    st.markdown("#### Oportunidades guardadas")
     if collabs.empty:
         st.info("Todavía no hay collabs guardadas.")
     else:
-        st.dataframe(
-            collabs[["name", "category", "why_fit", "approach", "priority", "status", "created_at"]],
-            hide_index=True,
-            use_container_width=True,
-        )
+        for _, row in collabs.head(20).iterrows():
+            row_id = row.get("id")
+            with st.expander(f"{row.get('name', 'Oportunidad')} · {row.get('status', 'Por investigar')}"):
+                with st.form(f"edit_collab_{row_id}"):
+                    edit_name = st.text_input("Nombre", value=str(row.get("name", "")))
+                    edit_url = st.text_input("Link", value=str(row.get("url", "")))
+                    cols = st.columns(3)
+                    edit_category = cols[0].text_input("Categoría", value=str(row.get("category", "")))
+                    edit_priority = cols[1].selectbox(
+                        "Prioridad",
+                        ["Alta", "Media", "Baja"],
+                        index=["Alta", "Media", "Baja"].index(row.get("priority", "Media"))
+                        if row.get("priority", "Media") in ["Alta", "Media", "Baja"]
+                        else 1,
+                        key=f"collab_priority_{row_id}",
+                    )
+                    edit_status = cols[2].selectbox(
+                        "Estado",
+                        ["Por investigar", "Contactar", "Mensaje enviado", "Respondió", "En conversación", "Ganada", "Descartada"],
+                        index=["Por investigar", "Contactar", "Mensaje enviado", "Respondió", "En conversación", "Ganada", "Descartada"].index(row.get("status", "Por investigar"))
+                        if row.get("status", "Por investigar") in ["Por investigar", "Contactar", "Mensaje enviado", "Respondió", "En conversación", "Ganada", "Descartada"]
+                        else 0,
+                        key=f"collab_status_{row_id}",
+                    )
+                    edit_why = st.text_area("Por qué encaja", value=str(row.get("why_fit", "")), height=90)
+                    edit_approach = st.text_area("Idea / acercamiento", value=str(row.get("approach", "")), height=110)
+                    save_collab = st.form_submit_button("Guardar cambios")
+
+                if save_collab and row_id is not None:
+                    safe_update_record(
+                        "collab_targets",
+                        int(row_id),
+                        {
+                            "name": edit_name,
+                            "url": edit_url,
+                            "category": edit_category,
+                            "priority": edit_priority,
+                            "status": edit_status,
+                            "why_fit": edit_why,
+                            "approach": edit_approach,
+                        },
+                    )
+                    st.success("Oportunidad actualizada.")
+                    st.rerun()
+
+                default_message = (
+                    f"Hola, vi el trabajo de {edit_name} y creo que hay una oportunidad visual interesante.\n\n"
+                    f"Soy DOMO, director creativo, diseñador y fotógrafo publicitario en Cuenca. "
+                    f"Me interesa proponer una colaboración alrededor de: {edit_approach}\n\n"
+                    "La idea sería crear una pieza con criterio editorial + calle: contenido que no solo se vea bien, "
+                    "sino que cuente por qué la marca tiene mundo, textura e identidad.\n\n"
+                    "Si te interesa, te puedo mandar una propuesta corta con concepto, referencias y entregables."
+                )
+                message = st.text_area("Mensaje sugerido para DM/mail", value=default_message, height=210, key=f"msg_{row_id}")
+                st.download_button(
+                    "Descargar mensaje",
+                    data=message.encode("utf-8"),
+                    file_name=f"mensaje_collab_{str(edit_name).lower().replace(' ', '_')}.txt",
+                    mime="text/plain",
+                    key=f"download_msg_{row_id}",
+                )
+                col_use, col_delete = st.columns(2)
+                with col_use:
+                    if st.button("Convertir en acción", key=f"collab_action_{row_id}"):
+                        conn = get_connection()
+                        add_action_item(conn, f"Contactar a {edit_name}", "Collabs", edit_approach, edit_priority)
+                        conn.close()
+                        st.success("Acción guardada en Inicio.")
+                with col_delete:
+                    if st.button("Borrar oportunidad", key=f"delete_collab_{row_id}"):
+                        safe_delete_record("collab_targets", int(row_id))
+                        st.success("Oportunidad borrada.")
+                        st.rerun()
 
 
 def parse_ai_payload(answer: str):
@@ -1509,30 +2005,133 @@ def carousel_to_script(carousel: dict) -> str:
 
 
 def render_assistant(posts: pd.DataFrame, assistant_notes: pd.DataFrame) -> None:
-    st.subheader("Asistente DOMO")
-    st.write("Pregúntale qué publicar, qué repetir, qué dejar de hacer o cómo convertir una idea en contenido que venda.")
+    st.subheader("Copiloto DOMO")
+    st.write("Tu asistente privado para decidir, crear y convertir contenido en oportunidades reales.")
 
-    question = st.text_area(
-        "Pregunta",
-        placeholder="Ej: quiero crecer en shares y conseguir colaboraciones con marcas cool, qué hago esta semana?",
+    reading = build_metric_reading(posts)
+    if "assistant_chat" not in st.session_state:
+        st.session_state["assistant_chat"] = [
+            {
+                "role": "assistant",
+                "content": (
+                    "Estoy listo. Puedo ayudarte a decidir qué publicar hoy, convertir links en ideas, "
+                    "armar carruseles, proponer Reels, leer métricas, preparar LinkedIn o buscar collabs."
+                ),
+            }
+        ]
+
+    seeded = st.session_state.pop("assistant_seed", "")
+    if seeded:
+        st.session_state["assistant_pending_prompt"] = seeded
+
+    st.markdown(
+        f"""
+        <div class="domo-callout">
+            Señal de hoy: {reading["next_move"]}
+        </div>
+        """,
+        unsafe_allow_html=True,
     )
-    if st.button("Responder como estratega DOMO", type="primary") and question:
-        answer = answer_as_domo_assistant(question, posts)
+
+    st.markdown("#### Qué necesitas ahora")
+    suggestions = [
+        "Dime qué publicar hoy para subir shares y saves.",
+        "Convierte mi último Reel en un carrusel guardable con frases por imagen.",
+        "Dame 5 ideas de Reels sobre branding, foto y cultura visual LATAM.",
+        "Propón una idea de LinkedIn para vender workshops sin sonar vendedor.",
+        "Busca una forma de conseguir collabs con marcas cool de Cuenca/Ecuador.",
+        "Analiza qué pegó, qué no pegó y qué debí hacer distinto.",
+    ]
+    cols = st.columns(3)
+    for index, prompt in enumerate(suggestions):
+        with cols[index % 3]:
+            if st.button(prompt, key=f"assistant_prompt_{index}"):
+                st.session_state["assistant_pending_prompt"] = prompt
+                st.rerun()
+
+    st.markdown('<div class="domo-chat-shell">', unsafe_allow_html=True)
+    for message in st.session_state["assistant_chat"][-10:]:
+        role_class = "domo-chat-user" if message["role"] == "user" else "domo-chat-assistant"
+        role_label = "Tú" if message["role"] == "user" else "DOMO AI"
+        safe_content = html.escape(str(message["content"])).replace("\n", "<br>")
+        st.markdown(
+            f"""
+            <div class="{role_class}">
+                <strong>{role_label}</strong>
+                {safe_content}
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+    st.markdown("</div>", unsafe_allow_html=True)
+
+    pending_prompt = st.session_state.pop("assistant_pending_prompt", "")
+    typed_prompt = st.chat_input("Escribe aquí: idea, link, duda, marca, métrica o algo que viste...")
+    question = pending_prompt or typed_prompt
+
+    if question:
+        st.session_state["assistant_chat"].append({"role": "user", "content": question})
+        with st.spinner("Pensando como estratega DOMO..."):
+            answer = answer_as_domo_assistant(question, posts)
+        st.session_state["assistant_chat"].append({"role": "assistant", "content": answer})
         conn = get_connection()
         add_assistant_note(conn, question, answer)
         conn.close()
-        st.markdown("#### Respuesta")
-        render_ai_answer(answer)
+        st.rerun()
 
-    st.markdown("#### Memoria del asistente")
+    last_answer = ""
+    for message in reversed(st.session_state["assistant_chat"]):
+        if message["role"] == "assistant":
+            last_answer = message["content"]
+            break
+
+    st.markdown("#### Convertir la respuesta en acción")
+    action_cols = st.columns(5)
+    with action_cols[0]:
+        if st.button("Crear idea"):
+            st.session_state["page"] = "Ideas"
+            st.session_state["assistant_seed"] = f"Usa esta respuesta como contexto para una idea DOMO: {last_answer}"
+            st.rerun()
+    with action_cols[1]:
+        if st.button("Hacer carrusel"):
+            st.session_state["page"] = "Carruseles"
+            st.session_state["carousel_seed"] = last_answer
+            st.rerun()
+    with action_cols[2]:
+        if st.button("Post LinkedIn"):
+            st.session_state["assistant_pending_prompt"] = f"Convierte esto en un post de LinkedIn con tono DOMO: {last_answer}"
+            st.rerun()
+    with action_cols[3]:
+        if st.button("Buscar collab"):
+            st.session_state["page"] = "Collabs"
+            st.rerun()
+    with action_cols[4]:
+        if st.button("Guardar acción"):
+            conn = get_connection()
+            add_action_item(
+                conn,
+                "Acción desde copiloto DOMO",
+                "Asistente",
+                last_answer[:900],
+                "Alta",
+            )
+            conn.close()
+            st.success("Acción guardada.")
+
+    st.markdown("#### Memoria reciente")
     if assistant_notes.empty:
         st.info("Aún no hay conversaciones guardadas.")
     else:
-        st.dataframe(
-            assistant_notes[["question", "answer", "created_at"]],
-            hide_index=True,
-            use_container_width=True,
-        )
+        for _, row in assistant_notes.head(5).iterrows():
+            row_id = row.get("id")
+            with st.expander(str(row.get("question", "Conversación"))[:90]):
+                st.markdown(f"**Pregunta:** {row.get('question', '')}")
+                render_ai_answer(str(row.get("answer", "")))
+                st.caption(str(row.get("created_at", "")))
+                if row_id and st.button("Borrar de memoria", key=f"delete_assistant_note_{row_id}"):
+                    safe_delete_record("assistant_notes", int(row_id))
+                    st.success("Conversación borrada.")
+                    st.rerun()
 
 
 def render_data_center(
@@ -1747,23 +2346,45 @@ def render_publish_time(posts: pd.DataFrame) -> None:
 
 
 def render_ideas(posts: pd.DataFrame, stored_ideas: pd.DataFrame) -> None:
-    st.subheader("Ideas estratégicas")
-    st.write("Genera ideas con criterio DOMO a partir de lo que está funcionando y lo que falta mejorar.")
+    st.subheader("Ideas de contenido")
+    st.write("Genera, guarda y mejora ideas para Reels, carruseles, LinkedIn, branding, fotografía, mockups, INHAUS y material de marca.")
 
-    col_a, col_b, col_c = st.columns(3)
+    col_a, col_b, col_c, col_d = st.columns(4)
     with col_a:
         count = st.slider("Cantidad", min_value=3, max_value=12, value=6)
     with col_b:
         focus = st.selectbox("Objetivo", ["shares", "saves", "comentarios de calidad", "visitas al perfil", "leads"])
     with col_c:
-        platform = st.selectbox("Plataforma principal", ["Instagram", "LinkedIn", "Ambas"])
+        platform = st.selectbox("Salida", ["Instagram", "LinkedIn", "Ambas"])
+    with col_d:
+        territory = st.selectbox(
+            "Territorio",
+            [
+                "Reels",
+                "Carruseles",
+                "LinkedIn",
+                "Branding",
+                "Fotografía publicitaria",
+                "Mockups y material de marca",
+                "INHAUS",
+                "Cultura visual / Cuenca",
+            ],
+        )
+
+    context_note = st.text_area(
+        "Contexto opcional",
+        placeholder="Ej: tengo mockups de una marca, fotos de producto, una campaña de INHAUS, behind the scenes, shots enteros...",
+        height=90,
+    )
 
     if st.button("Generar ideas", type="primary"):
-        new_ideas = generate_ideas(posts, focus=focus, platform=platform, count=count)
+        idea_focus = f"{focus}. Territorio: {territory}. Contexto DOMO: {context_note}".strip()
+        new_ideas = generate_ideas(posts, focus=idea_focus, platform=platform, count=count)
         st.session_state["generated_ideas"] = new_ideas
 
     ideas_to_show = st.session_state.get("generated_ideas", [])
     if ideas_to_show:
+        st.markdown("#### Ideas nuevas")
         for index, idea in enumerate(ideas_to_show):
             with st.container(border=True):
                 st.markdown(f"### {idea['title']}")
@@ -1790,8 +2411,82 @@ def render_ideas(posts: pd.DataFrame, stored_ideas: pd.DataFrame) -> None:
                             f"{idea['title']}\n{idea['hook']}\n{idea['share_save_mechanism']}\n{idea['strategic_reason']}"
                         )
                         st.rerun()
-    else:
-        st.dataframe(stored_ideas, hide_index=True, use_container_width=True)
+
+    st.markdown("#### Ideas guardadas")
+    if stored_ideas.empty:
+        st.info("Todavía no hay ideas guardadas.")
+        return
+
+    for _, row in stored_ideas.head(20).iterrows():
+        title = row.get("title", "Idea DOMO")
+        with st.expander(f"{title} · {row.get('format', 'Contenido')}"):
+            with st.form(f"edit_idea_{row.get('id', title)}"):
+                edit_title = st.text_input("Título", value=str(row.get("title", "")))
+                cols = st.columns(3)
+                edit_pillar = cols[0].selectbox(
+                    "Pilar",
+                    ["Así pienso yo", "Creatividad para todos", "DOMO ve el mundo"],
+                    index=["Así pienso yo", "Creatividad para todos", "DOMO ve el mundo"].index(row.get("pillar", "Así pienso yo"))
+                    if row.get("pillar", "Así pienso yo") in ["Así pienso yo", "Creatividad para todos", "DOMO ve el mundo"]
+                    else 0,
+                    key=f"pillar_{row.get('id', title)}",
+                )
+                edit_format = cols[1].text_input("Formato", value=str(row.get("format", "")))
+                edit_priority = cols[2].selectbox(
+                    "Prioridad",
+                    ["Alta", "Media", "Baja"],
+                    index=["Alta", "Media", "Baja"].index(row.get("priority", "Media"))
+                    if row.get("priority", "Media") in ["Alta", "Media", "Baja"]
+                    else 1,
+                    key=f"priority_{row.get('id', title)}",
+                )
+                edit_hook = st.text_area("Hook / primer segundo", value=str(row.get("hook", "")), height=80)
+                edit_share = st.text_area("Mecanismo de share/save", value=str(row.get("share_save_mechanism", "")), height=90)
+                edit_cta = st.text_area("CTA", value=str(row.get("cta", "")), height=80)
+                edit_reason = st.text_area(
+                    "Observaciones y razón estratégica",
+                    value=str(row.get("strategic_reason", "")),
+                    height=110,
+                    help="Aquí puedes ir actualizando aprendizajes sin crear otra entrada.",
+                )
+                edit_linkedin = st.text_area("Adaptación LinkedIn", value=str(row.get("linkedin_adaptation", "")), height=100)
+                save = st.form_submit_button("Guardar cambios")
+
+            if save and row.get("id") is not None:
+                safe_update_record(
+                    "content_ideas",
+                    int(row["id"]),
+                    {
+                        "title": edit_title,
+                        "pillar": edit_pillar,
+                        "format": edit_format,
+                        "priority": edit_priority,
+                        "hook": edit_hook,
+                        "share_save_mechanism": edit_share,
+                        "cta": edit_cta,
+                        "strategic_reason": edit_reason,
+                        "linkedin_adaptation": edit_linkedin,
+                    },
+                )
+                st.success("Idea actualizada.")
+                st.rerun()
+
+            col_car, col_link, col_delete = st.columns(3)
+            with col_car:
+                if st.button("Usar para carrusel", key=f"use_idea_carousel_{row.get('id', title)}"):
+                    st.session_state["page"] = "Carruseles"
+                    st.session_state["carousel_seed"] = f"{edit_title}\n{edit_hook}\n{edit_share}\n{edit_reason}"
+                    st.rerun()
+            with col_link:
+                if st.button("Usar para LinkedIn", key=f"use_idea_linkedin_{row.get('id', title)}"):
+                    st.session_state["page"] = "Asistente"
+                    st.session_state["assistant_seed"] = f"Convierte esta idea en post de LinkedIn para DOMO:\n{edit_title}\n{edit_linkedin}\n{edit_reason}"
+                    st.rerun()
+            with col_delete:
+                if st.button("Borrar idea", key=f"delete_idea_{row.get('id', title)}"):
+                    safe_delete_record("content_ideas", int(row["id"]))
+                    st.success("Idea borrada.")
+                    st.rerun()
 
 
 def render_carousels(posts: pd.DataFrame, inspirations: pd.DataFrame, carousels: pd.DataFrame) -> None:
@@ -1883,6 +2578,10 @@ def render_carousels(posts: pd.DataFrame, inspirations: pd.DataFrame, carousels:
                 st.text_area("Guion", script, height=220, key=f"script_{row['id']}")
                 st.markdown(f"**Caption:** {row.get('caption', '')}")
                 st.markdown(f"**CTA:** {row.get('cta', '')}")
+                if st.button("Borrar carrusel", key=f"delete_carousel_{row['id']}"):
+                    safe_delete_record("carousel_drafts", int(row["id"]))
+                    st.success("Carrusel borrado.")
+                    st.rerun()
 
 
 def render_monetization(monetization: pd.DataFrame, posts: pd.DataFrame) -> None:
@@ -1942,14 +2641,46 @@ def main() -> None:
         "Data Center",
         "Admin",
     ]
+    nav_labels = {
+        "Inicio": "Inicio - qué hago hoy",
+        "Lectura": "Lectura - qué pegó",
+        "Asistente": "Asistente - preguntar",
+        "Ideas": "Ideas - crear posts",
+        "Carruseles": "Carruseles - slides",
+        "Capturas": "Capturas - subir métricas",
+        "Trends": "Trends - radar web",
+        "Inspiración": "Inspiración - links",
+        "Collabs": "Collabs - marcas",
+        "Dashboard": "Dashboard - gráficos",
+        "Data Center": "Data Center - archivo",
+        "Admin": "Admin - conexiones",
+    }
+    nav_help = {
+        "Inicio": "Botones rápidos para decidir tu siguiente movimiento.",
+        "Lectura": "La app te dice qué funcionó, qué no y qué deberías ajustar.",
+        "Asistente": "Preguntas libres: estrategia, copies, ideas y lectura de decisiones.",
+        "Ideas": "Banco vivo de ideas para Reels, carruseles, branding, foto, INHAUS y LinkedIn.",
+        "Carruseles": "Frases por imagen, guion y texto listo para copiar a Illustrator.",
+        "Capturas": "Sube screenshots de estadísticas para que el sistema aprenda.",
+        "Trends": "Busca señales en la web para traducirlas a tu estilo.",
+        "Inspiración": "Pega links que te gusten y conviértelos en contenido DOMO.",
+        "Collabs": "Busca marcas, guarda oportunidades y redacta mensajes de acercamiento.",
+        "Dashboard": "Gráficos completos de métricas y comportamiento.",
+        "Data Center": "Archivo de todo lo guardado.",
+        "Admin": "Conexiones: OpenAI, Supabase, Instagram y LinkedIn.",
+    }
     if "page" not in st.session_state:
         st.session_state["page"] = "Inicio"
-    page = st.sidebar.radio(
+    current_page = st.session_state["page"] if st.session_state["page"] in nav_options else "Inicio"
+    label_options = [nav_labels[item] for item in nav_options]
+    selected_label = st.sidebar.radio(
         "Navegación",
-        nav_options,
-        index=nav_options.index(st.session_state["page"]) if st.session_state["page"] in nav_options else 0,
+        label_options,
+        index=nav_options.index(current_page),
     )
+    page = next(key for key, label in nav_labels.items() if label == selected_label)
     st.session_state["page"] = page
+    st.sidebar.caption(nav_help.get(page, ""))
 
     if page == "Inicio":
         render_command_center(posts, action_items)
