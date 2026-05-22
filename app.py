@@ -4,7 +4,7 @@ import os
 import json
 import socket
 import html
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 
 import pandas as pd
@@ -1129,6 +1129,55 @@ def inject_styles() -> None:
             35% {{ opacity: 1; }}
             to {{ transform: translateX(18px); opacity: 0; }}
         }}
+        @keyframes domo-loader {{
+            0% {{ transform: translateX(-100%) scaleX(.24); opacity: .25; }}
+            50% {{ transform: translateX(20%) scaleX(.72); opacity: 1; }}
+            100% {{ transform: translateX(180%) scaleX(.24); opacity: .25; }}
+        }}
+        @keyframes domo-breathe {{
+            0%, 100% {{ transform: scale(1); box-shadow: 0 0 0 0 rgba(207,255,79,.38); }}
+            50% {{ transform: scale(1.08); box-shadow: 0 0 0 8px rgba(207,255,79,0); }}
+        }}
+        @keyframes domo-count-glow {{
+            0%, 100% {{ transform: translateY(0) scale(1); text-shadow: 0 0 0 rgba(207,255,79,0); }}
+            50% {{ transform: translateY(-3px) scale(1.035); text-shadow: 0 0 24px rgba(207,255,79,.22); }}
+        }}
+        .stApp::before {{
+            content: "";
+            position: fixed;
+            z-index: 999999;
+            top: 0;
+            left: 0;
+            width: 38vw;
+            height: 4px;
+            border-radius: 999px;
+            background: linear-gradient(90deg, #CFFF4F, #8FE7FF, #FF84D6);
+            animation: domo-loader 2.4s cubic-bezier(.65,0,.35,1) infinite;
+            pointer-events: none;
+        }}
+        .main .block-container {{
+            padding-top: clamp(1.35rem, 3vw, 2.2rem) !important;
+        }}
+        .stTextInput,
+        .stTextArea,
+        .stSelectbox,
+        .stNumberInput,
+        .stSlider {{
+            margin-top: .55rem !important;
+            margin-bottom: 1rem !important;
+        }}
+        .stButton > button,
+        .stDownloadButton > button,
+        button[kind],
+        .stButton > button p,
+        .stDownloadButton > button p,
+        button[kind] p,
+        .stButton > button span,
+        .stDownloadButton > button span,
+        button[kind] span {{
+            color: #07100D !important;
+            text-shadow: none !important;
+        }}
         .domo-hero {{
             min-height: 310px;
         }}
@@ -1258,6 +1307,12 @@ def inject_styles() -> None:
         .domo-action {{
             position: relative;
             overflow: hidden;
+            background:
+                linear-gradient(135deg, rgba(243,247,234,.105), rgba(243,247,234,.045)),
+                #101511 !important;
+            border-radius: 34px !important;
+            min-height: 215px !important;
+            padding: 22px !important;
         }}
         .domo-launch::after,
         .domo-action::after {{
@@ -1315,6 +1370,11 @@ def inject_styles() -> None:
         .domo-launch h3,
         .domo-action strong {{
             animation: domo-text-pulse 4.8s ease-in-out infinite;
+            font-size: clamp(1.25rem, 2vw, 1.75rem) !important;
+            line-height: 1.05 !important;
+            color: #F6FAEF !important;
+            display: block;
+            margin-top: 18px;
         }}
         .domo-launch p::after,
         .domo-action p::after {{
@@ -1399,6 +1459,165 @@ def inject_styles() -> None:
             background: linear-gradient(120deg, transparent 0%, rgba(207,255,79,.06) 44%, transparent 58%);
             transform: translateX(-100%);
             animation: domo-scan 5.5s ease-in-out infinite;
+        }}
+        [data-testid="stMetric"] [data-testid="stMetricValue"] {{
+            animation: domo-count-glow 3.2s ease-in-out infinite;
+        }}
+        .domo-quick-note {{
+            margin: 12px 0 18px;
+            color: rgba(243,247,234,.62) !important;
+            font-size: .9rem;
+        }}
+        .domo-sidebar-brand {{
+            margin: 8px 0 18px;
+            padding: 18px;
+            border-radius: 28px;
+            background: linear-gradient(145deg, rgba(207,255,79,.18), rgba(143,231,255,.08));
+            border: 1px solid rgba(243,247,234,.12);
+        }}
+        .domo-sidebar-brand strong {{
+            display: block;
+            color: #F6FAEF !important;
+            font-size: 1.05rem;
+            line-height: 1.1;
+        }}
+        .domo-sidebar-brand span {{
+            color: rgba(243,247,234,.62) !important;
+            font-size: .78rem;
+        }}
+        .domo-sidebar-ai {{
+            margin: 14px 0 18px;
+            padding: 16px;
+            border-radius: 28px;
+            background: #101511;
+            border: 1px solid rgba(207,255,79,.22);
+            box-shadow: 0 16px 44px rgba(0,0,0,.28);
+        }}
+        .domo-sidebar-ai-title {{
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            color: #F6FAEF !important;
+            font-weight: 900;
+        }}
+        .domo-ai-dot {{
+            width: 10px;
+            height: 10px;
+            border-radius: 999px;
+            background: #CFFF4F;
+            animation: domo-breathe 1.65s ease-in-out infinite;
+        }}
+        .domo-sidebar-ai p {{
+            color: rgba(243,247,234,.72) !important;
+            font-size: .86rem;
+            line-height: 1.42;
+            margin: 10px 0 0;
+        }}
+        .domo-sidebar-ai small {{
+            display: inline-block;
+            margin-top: 10px;
+            color: #CFFF4F !important;
+            font-weight: 900;
+        }}
+        div[role="radiogroup"] {{
+            display: grid;
+            gap: 6px;
+        }}
+        div[role="radiogroup"] label {{
+            border: 1px solid transparent !important;
+            border-radius: 18px !important;
+            transition: transform .18s cubic-bezier(.34,1.56,.64,1), background .18s ease, border-color .18s ease !important;
+        }}
+        div[role="radiogroup"] label:has(input:checked) {{
+            background: rgba(207,255,79,.16) !important;
+            border-color: rgba(207,255,79,.36) !important;
+            transform: translateX(4px);
+        }}
+        .domo-wallet-calendar {{
+            margin: 22px 0 26px;
+            padding: 20px;
+            border-radius: 34px;
+            background:
+                radial-gradient(circle at 12% 0%, rgba(207,255,79,.18), transparent 35%),
+                #101511;
+            border: 1px solid rgba(243,247,234,.12);
+            box-shadow: var(--md-sys-elevation-2);
+        }}
+        .domo-wallet-calendar h3 {{
+            margin: 0 0 16px;
+            color: #F6FAEF !important;
+        }}
+        .domo-floating-bot {{
+            position: fixed;
+            right: 22px;
+            bottom: 82px;
+            z-index: 9999;
+            width: min(310px, calc(100vw - 44px));
+            padding: 14px 16px;
+            border-radius: 28px;
+            background: rgba(16,21,17,.88);
+            border: 1px solid rgba(207,255,79,.26);
+            box-shadow: 0 24px 70px rgba(0,0,0,.44);
+            backdrop-filter: blur(18px);
+            animation: domo-stagger-in .55s cubic-bezier(.34,1.56,.64,1) both;
+        }}
+        .domo-floating-bot strong {{
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            color: #F6FAEF !important;
+            font-size: .94rem;
+        }}
+        .domo-floating-bot p {{
+            color: rgba(243,247,234,.70) !important;
+            margin: 8px 0 0;
+            font-size: .82rem;
+            line-height: 1.35;
+        }}
+        .domo-day-row {{
+            display: grid;
+            grid-template-columns: repeat(7, minmax(0, 1fr));
+            gap: 8px;
+        }}
+        .domo-day {{
+            min-height: 86px;
+            padding: 12px;
+            border-radius: 24px;
+            background: rgba(243,247,234,.055);
+            border: 1px solid rgba(243,247,234,.10);
+            animation: domo-stagger-in .55s cubic-bezier(.34,1.56,.64,1) both;
+        }}
+        .domo-day strong {{
+            display: block;
+            color: #F6FAEF !important;
+            font-size: 1.25rem;
+        }}
+        .domo-day span {{
+            color: rgba(243,247,234,.56) !important;
+            font-size: .76rem;
+        }}
+        .domo-day.is-hot {{
+            background: #CFFF4F;
+            border-color: #CFFF4F;
+        }}
+        .domo-day.is-hot strong,
+        .domo-day.is-hot span {{
+            color: #07100D !important;
+        }}
+        @media (max-width: 760px) {{
+            .domo-day-row {{
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }}
+            .domo-launch,
+            .domo-action {{
+                min-height: auto !important;
+            }}
+            .domo-floating-bot {{
+                position: sticky;
+                bottom: 10px;
+                width: 100%;
+                margin-top: 18px;
+            }}
         }}
         @media (max-width: 900px) {{
             .domo-motion-stage {{
@@ -1719,8 +1938,36 @@ def render_header() -> None:
     )
 
 
+def render_header_actions() -> None:
+    st.markdown(
+        '<div class="domo-quick-note">Accesos rápidos reales: toca uno y la app te lleva directo.</div>',
+        unsafe_allow_html=True,
+    )
+    actions = [
+        ("Leer métricas", "Lectura"),
+        ("Crear contenido", "Ideas"),
+        ("Buscar collabs", "Collabs"),
+        ("Guardar aprendizaje", "Capturas"),
+    ]
+    cols = st.columns(4)
+    for col, (label, target) in zip(cols, actions):
+        with col:
+            if st.button(label, key=f"hero_go_{target}", use_container_width=True):
+                st.session_state["page"] = target
+                st.rerun()
+
+
 def render_mobile_hint() -> None:
     db_mode = get_supabase_status()["mode"]
+    st.sidebar.markdown(
+        """
+        <div class="domo-sidebar-brand">
+            <strong>DOMO Content Lab</strong>
+            <span>Asistente de crecimiento visual</span>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
     if os.getenv("STREAMLIT_SERVER_HEADLESS") or os.getenv("HOSTNAME"):
         st.sidebar.markdown("### App online")
         st.sidebar.write("Abierta desde Streamlit Cloud.")
@@ -1745,6 +1992,119 @@ def render_mobile_hint() -> None:
     st.sidebar.write("Supabase conectado." if db_mode == "Supabase" else "SQLite local. Conecta Supabase para historial permanente.")
 
 
+def page_tip(page: str, posts: pd.DataFrame) -> str:
+    reading = build_metric_reading(posts)
+    tips = {
+        "Inicio": f"Hoy prioriza esto: {reading['next_move']}",
+        "Lectura": f"Lee primero la señal débil. {reading['what_failed']}",
+        "Asistente": "Pregúntame como si fuera tu estratega: dame contexto, objetivo y canal.",
+        "Ideas": "Pide ideas por formato: Reel, carrusel, foto, branding, mockup, INHAUS o LinkedIn.",
+        "Carruseles": "Para saves, cada slide debe resolver una idea. Menos adorno, más frase copiable.",
+        "Capturas": "Sube métricas de los últimos posts para que el sistema aprenda qué repetir.",
+        "Trends": "Busca señales de diseño, cultura visual y marcas; luego tradúcelas a Cuenca/LATAM.",
+        "Inspiración": "Pega links que te gusten. La IA debe convertir referencia en criterio DOMO.",
+        "Collabs": "Busca marcas con estética compatible y guarda un mensaje con una idea concreta.",
+        "Dashboard": "Mira patrones, no likes sueltos: shares, saves, comentarios y perfil.",
+        "Data Center": "Limpia registros viejos y conserva lo que enseña una decisión.",
+        "Admin": "Si algo falla, revisa primero OpenAI, Supabase, Instagram y LinkedIn.",
+    }
+    return str(tips.get(page, reading["next_move"]))
+
+
+def render_sidebar_copilot(page: str, posts: pd.DataFrame) -> None:
+    reading = build_metric_reading(posts)
+    avg_share = safe_mean(posts, "share_rate")
+    avg_save = safe_mean(posts, "save_rate")
+    tip = page_tip(page, posts)
+    st.sidebar.markdown(
+        f"""
+        <div class="domo-sidebar-ai">
+            <div class="domo-sidebar-ai-title"><span class="domo-ai-dot"></span> IA activa</div>
+            <p><strong>Estoy mirando:</strong> {html.escape(page)}</p>
+            <p>{html.escape(tip)}</p>
+            <small>Shares {as_percent(avg_share)} · Saves {as_percent(avg_save)}</small>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    quick_question = st.sidebar.text_area(
+        "Preguntar al copiloto",
+        placeholder="Ej: estoy haciendo un carrusel de branding, qué debería mejorar?",
+        height=92,
+        key="sidebar_copilot_question",
+    )
+    if st.sidebar.button("Responder con IA", key="sidebar_copilot_button", use_container_width=True):
+        if quick_question.strip():
+            with st.spinner("DOMO IA está pensando..."):
+                try:
+                    answer = answer_as_domo_assistant(quick_question, posts)
+                except Exception:
+                    answer = (
+                        "Modo estrategia local: enfoca la pieza en una sola decisión. "
+                        "Si es carrusel, cada slide debe tener una frase copiable, un ejemplo visual "
+                        "y un cierre que pida guardar, comentar o escribir por DM."
+                    )
+            st.sidebar.markdown("#### Respuesta")
+            st.sidebar.write(answer)
+            conn = get_connection()
+            add_assistant_note(conn, quick_question, answer)
+            conn.close()
+        else:
+            st.sidebar.info("Escribe una pregunta rápida primero.")
+
+
+def render_floating_copilot(page: str, posts: pd.DataFrame) -> None:
+    tip = page_tip(page, posts)
+    st.markdown(
+        f"""
+        <div class="domo-floating-bot">
+            <strong><span class="domo-ai-dot"></span> Copiloto leyendo esta pantalla</strong>
+            <p>{html.escape(tip)}</p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def render_publish_calendar(posts: pd.DataFrame) -> None:
+    today = datetime.now()
+    best_days = []
+    if not posts.empty and "published_at" in posts.columns:
+        data = posts.copy()
+        data["published_at"] = pd.to_datetime(data["published_at"], errors="coerce")
+        data = with_strategic_score(data.dropna(subset=["published_at"]))
+        if not data.empty:
+            data["weekday"] = data["published_at"].dt.weekday
+            best_days = data.groupby("weekday")["strategic_score"].mean().sort_values(ascending=False).head(2).index.tolist()
+    if not best_days:
+        best_days = [1, 3]
+
+    day_names = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"]
+    cards = []
+    for offset in range(7):
+        date = today + timedelta(days=offset)
+        hot = date.weekday() in best_days
+        label = "Publicar" if hot else "Observar"
+        cards.append(
+            f"""
+            <div class="domo-day {'is-hot' if hot else ''}">
+                <span>{day_names[date.weekday()]}</span>
+                <strong>{date.day}</strong>
+                <span>{label}</span>
+            </div>
+            """
+        )
+    st.markdown(
+        f"""
+        <div class="domo-wallet-calendar">
+            <h3>Calendario inteligente</h3>
+            <div class="domo-day-row">{''.join(cards)}</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
 def render_command_center(posts: pd.DataFrame, action_items: pd.DataFrame) -> None:
     st.subheader("Centro de acción")
     reading = build_metric_reading(posts)
@@ -1760,6 +2120,7 @@ def render_command_center(posts: pd.DataFrame, action_items: pd.DataFrame) -> No
         """,
         unsafe_allow_html=True,
     )
+    render_publish_calendar(posts)
 
     launchers = [
         ("Asistente", "Copiloto", "Pregunta qué publicar, cómo vender o cómo convertir una idea."),
@@ -3255,6 +3616,7 @@ def main() -> None:
         return
     render_mobile_hint()
     render_header()
+    render_header_actions()
     (
         posts,
         daily,
@@ -3285,18 +3647,18 @@ def main() -> None:
         "Admin",
     ]
     nav_labels = {
-        "Inicio": "Inicio - qué hago hoy",
-        "Lectura": "Lectura - qué pegó",
-        "Asistente": "Asistente - preguntar",
-        "Ideas": "Ideas - crear posts",
-        "Carruseles": "Carruseles - slides",
-        "Capturas": "Capturas - subir métricas",
-        "Trends": "Trends - radar web",
-        "Inspiración": "Inspiración - links",
-        "Collabs": "Collabs - marcas",
-        "Dashboard": "Dashboard - gráficos",
-        "Data Center": "Data Center - archivo",
-        "Admin": "Admin - conexiones",
+        "Inicio": "01 Centro de acción",
+        "Lectura": "02 Qué está pasando",
+        "Asistente": "03 Copiloto IA",
+        "Ideas": "04 Crear contenido",
+        "Carruseles": "05 Carruseles",
+        "Capturas": "06 Subir métricas",
+        "Trends": "07 Radar web",
+        "Inspiración": "08 Links guardados",
+        "Collabs": "09 Collabs y marcas",
+        "Dashboard": "10 Gráficos",
+        "Data Center": "11 Archivo",
+        "Admin": "12 Conexiones",
     }
     nav_help = {
         "Inicio": "Botones rápidos para decidir tu siguiente movimiento.",
@@ -3324,6 +3686,8 @@ def main() -> None:
     page = next(key for key, label in nav_labels.items() if label == selected_label)
     st.session_state["page"] = page
     st.sidebar.caption(nav_help.get(page, ""))
+    render_sidebar_copilot(page, posts)
+    render_floating_copilot(page, posts)
 
     if page == "Inicio":
         render_command_center(posts, action_items)
