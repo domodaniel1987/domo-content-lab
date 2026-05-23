@@ -2091,6 +2091,7 @@ def inject_styles() -> None:
                 padding-left: 1rem;
                 padding-right: 1rem;
                 padding-top: 1.3rem;
+                padding-bottom: 7rem;
             }}
             h1 {{
                 font-size: 2.35rem !important;
@@ -2124,6 +2125,273 @@ def inject_styles() -> None:
                 width: 100%;
                 overflow-x: auto;
                 border-radius: 16px;
+            }}
+        }}
+        .domo-os-shell {{
+            max-width: 1220px;
+            margin: 0 auto 26px;
+        }}
+        .domo-os-top {{
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 18px;
+            align-items: center;
+            margin: 8px 0 18px;
+        }}
+        .domo-os-kicker {{
+            color: #CFFF4F !important;
+            font-size: .78rem;
+            font-weight: 950;
+            text-transform: uppercase;
+        }}
+        .domo-os-title {{
+            color: #F6FAEF !important;
+            font-size: clamp(2.45rem, 6vw, 5.8rem);
+            line-height: .88;
+            font-weight: 950;
+            letter-spacing: 0;
+        }}
+        .domo-os-status {{
+            min-width: 190px;
+            padding: 14px 16px;
+            border-radius: 30px;
+            background: rgba(243,247,234,.06);
+            border: 1px solid rgba(243,247,234,.10);
+            color: rgba(243,247,234,.70) !important;
+        }}
+        .domo-os-status strong {{
+            display: block;
+            color: #F6FAEF !important;
+            font-size: 1.35rem;
+        }}
+        .domo-os-grid {{
+            display: grid;
+            grid-template-columns: repeat(12, minmax(0, 1fr));
+            gap: 14px;
+        }}
+        .domo-widget {{
+            display: block;
+            text-decoration: none !important;
+            position: relative;
+            min-height: 160px;
+            border-radius: 34px;
+            padding: 20px;
+            background: #101511;
+            border: 1px solid rgba(243,247,234,.08);
+            overflow: hidden;
+            animation: domo-stagger-in .58s cubic-bezier(.34,1.56,.64,1) both;
+            transition: transform .22s cubic-bezier(.34,1.56,.64,1), border-color .2s ease, filter .2s ease;
+        }}
+        .domo-widget:hover {{
+            transform: translateY(-5px) scale(1.012);
+            border-color: rgba(207,255,79,.30);
+            filter: saturate(1.1);
+        }}
+        .domo-widget.lime {{
+            background: #CFFF4F;
+        }}
+        .domo-widget.paper {{
+            background: #F6FAEF;
+        }}
+        .domo-widget.cyan {{
+            background: linear-gradient(145deg, rgba(56,201,232,.95), rgba(56,201,232,.55));
+        }}
+        .domo-widget.magenta {{
+            background: linear-gradient(145deg, rgba(255,132,214,.92), rgba(140,29,217,.62));
+        }}
+        .domo-widget.orange {{
+            background: linear-gradient(145deg, rgba(255,201,87,.96), rgba(244,91,105,.50));
+        }}
+        .domo-widget.lime *,
+        .domo-widget.paper *,
+        .domo-widget.cyan *,
+        .domo-widget.orange * {{
+            color: #07100D !important;
+        }}
+        .domo-widget-label {{
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 7px 10px;
+            border-radius: 999px;
+            background: rgba(243,247,234,.10);
+            color: rgba(243,247,234,.78) !important;
+            font-size: .78rem;
+            font-weight: 900;
+        }}
+        .domo-widget.lime .domo-widget-label,
+        .domo-widget.paper .domo-widget-label,
+        .domo-widget.cyan .domo-widget-label,
+        .domo-widget.orange .domo-widget-label {{
+            background: rgba(7,16,13,.10);
+        }}
+        .domo-widget-number {{
+            display: block;
+            margin-top: 20px;
+            color: #F6FAEF !important;
+            font-size: clamp(3.2rem, 8vw, 7rem);
+            line-height: .78;
+            font-weight: 950;
+            animation: domo-count-glow 3s ease-in-out infinite;
+        }}
+        .domo-widget-title {{
+            margin-top: 18px;
+            color: #F6FAEF !important;
+            font-size: clamp(1.35rem, 2.2vw, 2.1rem);
+            line-height: .98;
+            font-weight: 950;
+        }}
+        .domo-widget-copy {{
+            margin: 10px 0 0;
+            color: rgba(243,247,234,.68) !important;
+            font-size: .9rem;
+            line-height: 1.3;
+        }}
+        .domo-widget-size-xl {{ grid-column: span 6; min-height: 310px; }}
+        .domo-widget-size-lg {{ grid-column: span 4; min-height: 250px; }}
+        .domo-widget-size-md {{ grid-column: span 3; }}
+        .domo-widget-size-wide {{ grid-column: span 8; }}
+        .domo-widget-size-side {{ grid-column: span 4; }}
+        .domo-os-pills {{
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 16px 0 0;
+        }}
+        .domo-os-pill {{
+            display: inline-flex;
+            min-height: 42px;
+            align-items: center;
+            justify-content: center;
+            padding: 10px 16px;
+            border-radius: 999px;
+            background: rgba(243,247,234,.08);
+            color: #F6FAEF !important;
+            font-weight: 900;
+            text-decoration: none !important;
+            border: 1px solid rgba(243,247,234,.09);
+            transition: transform .2s cubic-bezier(.34,1.56,.64,1), background .2s ease;
+        }}
+        .domo-os-pill.is-hot {{
+            background: #CFFF4F;
+            color: #07100D !important;
+        }}
+        .domo-os-pill:hover {{
+            transform: translateY(-3px) scale(1.04);
+        }}
+        .domo-os-calendar {{
+            display: grid;
+            grid-template-columns: repeat(7, minmax(0, 1fr));
+            gap: 8px;
+            margin-top: 16px;
+        }}
+        .domo-os-day {{
+            min-height: 78px;
+            border-radius: 24px;
+            background: #F6FAEF;
+            color: #07100D !important;
+            display: grid;
+            place-items: center;
+            font-weight: 950;
+            animation: domo-number-pop .7s cubic-bezier(.34,1.56,.64,1) both;
+        }}
+        .domo-os-day.hot {{
+            background: #CFFF4F;
+            box-shadow: 0 0 34px rgba(207,255,79,.22);
+        }}
+        .domo-os-card-list {{
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 14px;
+        }}
+        .domo-content-tile {{
+            min-height: 220px;
+            border-radius: 34px;
+            padding: 18px;
+            background: #101511;
+            border: 1px solid rgba(243,247,234,.08);
+            animation: domo-stagger-in .56s cubic-bezier(.34,1.56,.64,1) both;
+        }}
+        .domo-content-tile strong {{
+            display: block;
+            color: #F6FAEF !important;
+            font-size: 1.28rem;
+            line-height: 1.02;
+            margin-top: 22px;
+        }}
+        .domo-content-tile span {{
+            color: rgba(243,247,234,.62) !important;
+            font-size: .8rem;
+            font-weight: 900;
+        }}
+        .domo-bottom-nav {{
+            position: fixed;
+            left: 50%;
+            bottom: 18px;
+            transform: translateX(-50%);
+            z-index: 999998;
+            display: flex;
+            gap: 8px;
+            padding: 8px;
+            border-radius: 999px;
+            background: rgba(7,10,8,.78);
+            border: 1px solid rgba(243,247,234,.12);
+            backdrop-filter: blur(18px);
+            box-shadow: 0 18px 56px rgba(0,0,0,.34);
+        }}
+        .domo-bottom-nav a {{
+            min-width: 76px;
+            min-height: 48px;
+            padding: 8px 13px;
+            border-radius: 999px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: rgba(243,247,234,.72) !important;
+            text-decoration: none !important;
+            font-weight: 950;
+            font-size: .78rem;
+        }}
+        .domo-bottom-nav a.active {{
+            background: #CFFF4F;
+            color: #07100D !important;
+        }}
+        @media (max-width: 980px) {{
+            section[data-testid="stSidebar"] {{
+                display: none !important;
+            }}
+            .domo-floating-bot {{
+                right: 12px;
+                top: auto;
+                bottom: 86px;
+                width: min(300px, calc(100vw - 24px));
+            }}
+            .domo-os-top {{
+                grid-template-columns: 1fr;
+            }}
+            .domo-os-grid,
+            .domo-os-card-list {{
+                grid-template-columns: 1fr;
+            }}
+            .domo-widget-size-xl,
+            .domo-widget-size-lg,
+            .domo-widget-size-md,
+            .domo-widget-size-wide,
+            .domo-widget-size-side {{
+                grid-column: span 1;
+            }}
+            .domo-os-calendar {{
+                grid-template-columns: repeat(4, minmax(0, 1fr));
+            }}
+            .domo-bottom-nav {{
+                width: calc(100vw - 22px);
+                justify-content: space-between;
+                bottom: 10px;
+            }}
+            .domo-bottom-nav a {{
+                min-width: 0;
+                flex: 1;
+                font-size: .72rem;
             }}
         }}
         </style>
@@ -2391,6 +2659,10 @@ def render_mobile_hint() -> None:
 def page_tip(page: str, posts: pd.DataFrame) -> str:
     reading = build_metric_reading(posts)
     tips = {
+        "TODAY": f"Hoy prioriza esto: {reading['next_move']}",
+        "COPILOT": "Pregúntame como estratega: objetivo, canal y material disponible.",
+        "CONTENT": "Crea desde una señal: Reel para atención, carrusel para saves, LinkedIn para autoridad.",
+        "METRICS": f"Lee primero esto: {reading['what_failed']}",
         "Inicio": f"Hoy prioriza esto: {reading['next_move']}",
         "Lectura": f"Lee primero la señal débil. {reading['what_failed']}",
         "Asistente": "Pregúntame como si fuera tu estratega: dame contexto, objetivo y canal.",
@@ -2456,7 +2728,7 @@ def render_floating_copilot(page: str, posts: pd.DataFrame) -> None:
         <div class="domo-floating-bot">
             <strong><span class="domo-ai-dot"></span> Copiloto leyendo esta pantalla</strong>
             <p>{html.escape(tip)}</p>
-            <a href="?page=Asistente" target="_self">Preguntar ahora</a>
+            <a href="?page=COPILOT" target="_self">Preguntar ahora</a>
         </div>
         """,
         unsafe_allow_html=True,
@@ -4117,6 +4389,213 @@ def render_monetization(monetization: pd.DataFrame, posts: pd.DataFrame) -> None
     st.dataframe(top_posts[["title", "platform", "pillar", "format", "profile_visit_rate", "quality_comment_rate"]], hide_index=True, use_container_width=True)
 
 
+OS_PAGES = ["TODAY", "COPILOT", "CONTENT", "METRICS"]
+
+
+def render_os_nav(current: str) -> None:
+    items = [
+        ("TODAY", "Hoy"),
+        ("COPILOT", "IA"),
+        ("CONTENT", "Crear"),
+        ("METRICS", "Pulso"),
+    ]
+    links = []
+    for key, label in items:
+        active = "active" if key == current else ""
+        links.append(f'<a class="{active}" href="?page={key}" target="_self">{label}</a>')
+    st.markdown(f'<nav class="domo-bottom-nav">{"".join(links)}</nav>', unsafe_allow_html=True)
+
+
+def render_os_header(page: str, subtitle: str, posts: pd.DataFrame) -> None:
+    status = "Live" if not posts.empty else "Ready"
+    st.markdown(
+        f"""
+        <div class="domo-os-shell">
+            <div class="domo-os-top">
+                <div>
+                    <div class="domo-os-kicker">DOMO Content OS / {html.escape(page)}</div>
+                    <div class="domo-os-title">{html.escape(page)}</div>
+                    <p class="domo-widget-copy">{html.escape(subtitle)}</p>
+                </div>
+                <div class="domo-os-status">
+                    <span>Sistema</span>
+                    <strong>{status}</strong>
+                    <span>{len(posts)} señales leídas</span>
+                </div>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def os_widget(
+    label: str,
+    title: str,
+    value: str = "",
+    body: str = "",
+    tone: str = "",
+    size: str = "md",
+    href: str | None = None,
+) -> str:
+    tag = "a" if href else "div"
+    link = f' href="{href}" target="_self"' if href else ""
+    value_html = f'<span class="domo-widget-number">{html.escape(value)}</span>' if value else ""
+    body_html = f'<p class="domo-widget-copy">{html.escape(body)}</p>' if body else ""
+    return (
+        f'<{tag} class="domo-widget domo-widget-size-{size} {tone}"{link}>'
+        f'<span class="domo-widget-label">{html.escape(label)}</span>'
+        f'{value_html}'
+        f'<div class="domo-widget-title">{html.escape(title)}</div>'
+        f'{body_html}'
+        f'</{tag}>'
+    )
+
+
+def render_today_os(posts: pd.DataFrame, action_items: pd.DataFrame) -> None:
+    reading = build_metric_reading(posts)
+    avg_share = safe_mean(posts, "share_rate")
+    avg_save = safe_mean(posts, "save_rate")
+    avg_comments = safe_mean(posts, "quality_comment_rate")
+    scored = with_strategic_score(posts)
+    best_post = "Sin ganador todavía"
+    if not scored.empty:
+        best_post = str(scored.sort_values("strategic_score", ascending=False).iloc[0].get("title", best_post))
+
+    weak_label = "Shares"
+    weak_value = avg_share
+    if avg_save < weak_value:
+        weak_label = "Saves"
+        weak_value = avg_save
+    if avg_comments < weak_value:
+        weak_label = "Comments"
+        weak_value = avg_comments
+
+    today = datetime.now()
+    hot_days = [1, 3]
+    if not scored.empty and "published_at" in scored.columns:
+        data = scored.copy()
+        data["published_at"] = pd.to_datetime(data["published_at"], errors="coerce")
+        data = data.dropna(subset=["published_at"])
+        if not data.empty:
+            data["weekday"] = data["published_at"].dt.weekday
+            hot_days = data.groupby("weekday")["strategic_score"].mean().sort_values(ascending=False).head(2).index.tolist()
+
+    days = []
+    for offset in range(7):
+        date = today + timedelta(days=offset)
+        hot = "hot" if date.weekday() in hot_days else ""
+        days.append(f'<div class="domo-os-day {hot}">{date.day}</div>')
+
+    st.markdown(
+        f"""
+        <div class="domo-os-shell">
+            <div class="domo-os-grid">
+                {os_widget("SIGNAL", "Movimiento de hoy", "01", str(reading["next_move"]), "lime", "xl", "?page=CONTENT")}
+                {os_widget("BEST", "Contenido con más señal", "★", best_post, "paper", "lg", "?page=METRICS")}
+                {os_widget("WEAK", f"{weak_label} débil", as_percent(weak_value), "La IA recomienda corregir esta señal primero.", "magenta", "lg", "?page=METRICS")}
+                {os_widget("AI", "Preguntar al copiloto", "IA", "Qué publicar, cuándo, cómo vender o cómo convertir una idea.", "", "md", "?page=COPILOT")}
+                {os_widget("CREATE", "Reel → carrusel", "↗", "Convierte atención en guardados.", "cyan", "md", "?page=CONTENT")}
+                {os_widget("COLLAB", "Oportunidad de marca", "09", "Busca marcas, redacta pitch y guarda seguimiento.", "orange", "md", "?page=CONTENT")}
+                <div class="domo-widget domo-widget-size-wide">
+                    <span class="domo-widget-label">TIMING</span>
+                    <div class="domo-widget-title">Mejores días para publicar esta semana</div>
+                    <div class="domo-os-calendar">{"".join(days)}</div>
+                </div>
+                {os_widget("READING", "Qué está pasando", "", str(reading["headline"]), "", "side", "?page=METRICS")}
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def render_copilot_os(posts: pd.DataFrame, assistant_notes: pd.DataFrame) -> None:
+    render_os_header("COPILOT", "Chat primero. Pregunta y convierte respuestas en ideas, carruseles, LinkedIn o collabs.", posts)
+    prompts = [
+        "Qué publico hoy con lo que ya funcionó?",
+        "Convierte mi último Reel en carrusel guardable.",
+        "Dame una idea de LinkedIn para atraer consultoría.",
+        "Qué marca debería buscar para colaborar?",
+    ]
+    st.markdown(
+        '<div class="domo-os-shell"><div class="domo-os-card-list">'
+        + "".join(os_widget("PROMPT", prompt, "", "Toca, copia o úsalo como punto de partida.", "paper" if i % 2 else "lime", "md") for i, prompt in enumerate(prompts))
+        + "</div></div>",
+        unsafe_allow_html=True,
+    )
+    render_assistant(posts, assistant_notes)
+
+
+def render_content_os(
+    posts: pd.DataFrame,
+    stored_ideas: pd.DataFrame,
+    screenshots: pd.DataFrame,
+    inspirations: pd.DataFrame,
+    trends: pd.DataFrame,
+    collabs: pd.DataFrame,
+    carousels: pd.DataFrame,
+) -> None:
+    render_os_header("CONTENT", "Biblioteca visual: ideas, carruseles, inspiración, trends, collabs y drafts.", posts)
+    counts = [
+        ("Ideas", len(stored_ideas), "Crear posts y Reels", "?page=Ideas", "lime"),
+        ("Carruseles", len(carousels), "Slides listos para copiar", "?page=Carruseles", "paper"),
+        ("Inspiración", len(inspirations), "Links guardados", "?page=Inspiración", "cyan"),
+        ("Trends", len(trends), "Radar web", "?page=Trends", "orange"),
+        ("Collabs", len(collabs), "Marcas y pitch", "?page=Collabs", "magenta"),
+        ("Capturas", len(posts), "Actualizar data", "?page=Capturas", ""),
+    ]
+    st.markdown(
+        '<div class="domo-os-shell"><div class="domo-os-grid">'
+        + "".join(os_widget("LIBRARY", title, str(count), body, tone, "lg", href) for title, count, body, href, tone in counts)
+        + "</div></div>",
+        unsafe_allow_html=True,
+    )
+    section = st.radio(
+        "Abrir herramienta",
+        ["Ideas", "Carruseles", "Inspiración", "Trends", "Collabs", "Capturas"],
+        index=0,
+        horizontal=True,
+    )
+    if section == "Ideas":
+        render_ideas(posts, stored_ideas)
+    elif section == "Carruseles":
+        render_carousels(posts, inspirations, carousels)
+    elif section == "Inspiración":
+        render_inspiration_lab(posts, inspirations)
+    elif section == "Trends":
+        render_trend_lab(posts, trends)
+    elif section == "Collabs":
+        render_collab_lab(posts, collabs)
+    else:
+        render_capture_lab(posts, screenshots)
+
+
+def render_metrics_os(posts: pd.DataFrame, profile: pd.DataFrame, daily: pd.DataFrame, monetization: pd.DataFrame) -> None:
+    render_os_header("METRICS", "Visual analytics: señales claras, explicación simple y siguiente acción.", posts)
+    reading = build_metric_reading(posts)
+    metric_widgets = [
+        ("SHARES", "Share signal", as_percent(safe_mean(posts, "share_rate")), "Representación cultural. Si está bajo, falta frase/postura compartible.", "magenta"),
+        ("SAVES", "Save signal", as_percent(safe_mean(posts, "save_rate")), "Valor guardable. Sube con checklists, marcos y referencias.", "lime"),
+        ("COMMENTS", "Quality comments", as_percent(safe_mean(posts, "quality_comment_rate")), "Conversación útil. Necesita pregunta específica.", "cyan"),
+        ("PROFILE", "Profile visits", as_percent(safe_mean(posts, "profile_visit_rate")), "Intención comercial. Necesita CTA claro.", "orange"),
+    ]
+    st.markdown(
+        '<div class="domo-os-shell"><div class="domo-os-grid">'
+        + "".join(os_widget(label, title, value, body, tone, "lg") for label, title, value, body, tone in metric_widgets)
+        + os_widget("AI READ", "Qué significa", "", str(reading["headline"]), "", "wide")
+        + os_widget("NEXT", "Siguiente ajuste", "→", str(reading["next_move"]), "paper", "side")
+        + "</div></div>",
+        unsafe_allow_html=True,
+    )
+    with st.expander("Ver gráficos completos"):
+        render_summary(posts, profile)
+        render_growth_reading(posts, profile)
+        render_trends(posts, daily)
+        if not monetization.empty:
+            render_monetization(monetization, posts)
+
+
 def main() -> None:
     inject_styles()
     if not require_login():
@@ -4137,56 +4616,43 @@ def main() -> None:
         carousels,
     ) = load_data()
 
-    nav_options = [
-        "Inicio",
-        "Lectura",
-        "Asistente",
-        "Ideas",
-        "Carruseles",
-        "Capturas",
-        "Trends",
-        "Inspiración",
-        "Collabs",
-        "Dashboard",
-        "Data Center",
-        "Admin",
-    ]
+    nav_options = OS_PAGES
     nav_labels = {
-        "Inicio": "01 Centro de acción",
-        "Lectura": "02 Qué está pasando",
-        "Asistente": "03 Copiloto IA",
-        "Ideas": "04 Crear contenido",
-        "Carruseles": "05 Carruseles",
-        "Capturas": "06 Subir métricas",
-        "Trends": "07 Radar web",
-        "Inspiración": "08 Links guardados",
-        "Collabs": "09 Collabs y marcas",
-        "Dashboard": "10 Gráficos",
-        "Data Center": "11 Archivo",
-        "Admin": "12 Conexiones",
+        "TODAY": "01 TODAY",
+        "COPILOT": "02 COPILOT",
+        "CONTENT": "03 CONTENT",
+        "METRICS": "04 METRICS",
     }
     nav_help = {
-        "Inicio": "Botones rápidos para decidir tu siguiente movimiento.",
-        "Lectura": "La app te dice qué funcionó, qué no y qué deberías ajustar.",
-        "Asistente": "Preguntas libres: estrategia, copies, ideas y lectura de decisiones.",
-        "Ideas": "Banco vivo de ideas para Reels, carruseles, branding, foto, INHAUS y LinkedIn.",
-        "Carruseles": "Frases por imagen, guion y texto listo para copiar a Illustrator.",
-        "Capturas": "Sube screenshots de estadísticas para que el sistema aprenda.",
-        "Trends": "Busca señales en la web para traducirlas a tu estilo.",
-        "Inspiración": "Pega links que te gusten y conviértelos en contenido DOMO.",
-        "Collabs": "Busca marcas, guarda oportunidades y redacta mensajes de acercamiento.",
-        "Dashboard": "Gráficos completos de métricas y comportamiento.",
-        "Data Center": "Archivo de todo lo guardado.",
-        "Admin": "Conexiones: OpenAI, Supabase, Instagram y LinkedIn.",
+        "TODAY": "Cockpit visual para decidir qué hacer ahora.",
+        "COPILOT": "Chat central para crear, leer métricas y administrar.",
+        "CONTENT": "Biblioteca visual de ideas, carruseles, links, trends y collabs.",
+        "METRICS": "Señales visuales: qué pegó, qué está débil y qué corregir.",
     }
     if "page" not in st.session_state:
-        st.session_state["page"] = "Inicio"
+        st.session_state["page"] = "TODAY"
     query_page = st.query_params.get("page")
     if isinstance(query_page, list):
         query_page = query_page[0] if query_page else None
+    aliases = {
+        "Inicio": "TODAY",
+        "Lectura": "METRICS",
+        "Dashboard": "METRICS",
+        "Data Center": "METRICS",
+        "Admin": "METRICS",
+        "Asistente": "COPILOT",
+        "Ideas": "CONTENT",
+        "Carruseles": "CONTENT",
+        "Capturas": "CONTENT",
+        "Trends": "CONTENT",
+        "Inspiración": "CONTENT",
+        "Collabs": "CONTENT",
+    }
+    if query_page in aliases:
+        query_page = aliases[query_page]
     if query_page in nav_options:
         st.session_state["page"] = query_page
-    current_page = st.session_state["page"] if st.session_state["page"] in nav_options else "Inicio"
+    current_page = st.session_state["page"] if st.session_state["page"] in nav_options else "TODAY"
     label_options = [nav_labels[item] for item in nav_options]
     selected_label = st.sidebar.radio(
         "Navegación",
@@ -4199,52 +4665,20 @@ def main() -> None:
     st.sidebar.caption(nav_help.get(page, ""))
     render_sidebar_copilot(page, posts)
     render_floating_copilot(page, posts)
+    render_os_nav(page)
 
-    if page == "Inicio":
-        render_command_center(posts, action_items)
-    elif page == "Lectura":
-        render_header()
-        render_header_actions()
-        render_growth_reading(posts, profile)
-    elif page == "Asistente":
-        render_header()
-        render_header_actions()
-        render_assistant(posts, assistant_notes)
-    elif page == "Ideas":
-        render_header()
-        render_header_actions()
-        render_ideas(posts, stored_ideas)
-    elif page == "Carruseles":
-        render_header()
-        render_header_actions()
-        render_carousels(posts, inspirations, carousels)
-    elif page == "Capturas":
-        render_header()
-        render_header_actions()
-        render_capture_lab(posts, screenshots)
-    elif page == "Trends":
-        render_header()
-        render_header_actions()
-        render_trend_lab(posts, trends)
-    elif page == "Inspiración":
-        render_header()
-        render_header_actions()
-        render_inspiration_lab(posts, inspirations)
-    elif page == "Collabs":
-        render_header()
-        render_header_actions()
-        render_collab_lab(posts, collabs)
-    elif page == "Data Center":
-        render_header()
-        render_header_actions()
-        render_data_center(posts, daily, profile, screenshots, inspirations, trends, collabs)
-    elif page == "Admin":
-        render_header()
-        render_header_actions()
-        render_admin()
+    if page == "TODAY":
+        render_today_os(posts, action_items)
+    elif page == "COPILOT":
+        render_copilot_os(posts, assistant_notes)
+    elif page == "CONTENT":
+        render_content_os(posts, stored_ideas, screenshots, inspirations, trends, collabs, carousels)
+    elif page == "METRICS":
+        render_metrics_os(posts, profile, daily, monetization)
+        with st.expander("Conexiones y archivo avanzado"):
+            render_admin()
+            render_data_center(posts, daily, profile, screenshots, inspirations, trends, collabs)
     else:
-        render_header()
-        render_header_actions()
         tabs = st.tabs([
             "Resumen",
             "Lectura",
