@@ -1612,6 +1612,56 @@ def inject_styles() -> None:
             transform: translateY(-2px) scale(1.04);
             filter: saturate(1.2);
         }}
+        .domo-global-copilot {{
+            margin: 0 0 18px;
+            padding: 16px;
+            border-radius: 32px;
+            background:
+                radial-gradient(circle at 0% 0%, rgba(207,255,79,.22), transparent 32%),
+                radial-gradient(circle at 94% 12%, rgba(56,201,232,.16), transparent 28%),
+                rgba(13,17,14,.92);
+            border: 1px solid rgba(243,247,234,.14);
+            backdrop-filter: blur(18px);
+        }}
+        .domo-global-copilot-head {{
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 12px;
+        }}
+        .domo-global-copilot-title {{
+            color: #F6FAEF !important;
+            font-size: clamp(1.05rem, 2vw, 1.35rem);
+            font-weight: 950;
+            line-height: 1;
+        }}
+        .domo-global-copilot-tip {{
+            color: rgba(243,247,234,.66) !important;
+            font-size: .86rem;
+            line-height: 1.35;
+            margin-top: 4px;
+        }}
+        .domo-global-copilot .stTextInput > div > div > input {{
+            min-height: 52px;
+            border-radius: 999px !important;
+            background: rgba(246,250,239,.96) !important;
+            color: #07100D !important;
+            font-weight: 850;
+            padding-left: 18px !important;
+        }}
+        .domo-global-copilot .stButton > button {{
+            min-height: 52px;
+            border-radius: 999px !important;
+        }}
+        .domo-global-answer {{
+            margin-top: 12px;
+            padding: 14px 16px;
+            border-radius: 24px;
+            background: rgba(246,250,239,.08);
+            border: 1px solid rgba(243,247,234,.12);
+            color: #F6FAEF !important;
+        }}
         .domo-day-row {{
             display: grid;
             grid-template-columns: repeat(7, minmax(0, 1fr));
@@ -2407,10 +2457,25 @@ def get_secret(name: str, default: str = "") -> str:
         return os.getenv(name, default)
 
 
+def get_query_value(name: str, default: str = "") -> str:
+    value = st.query_params.get(name, default)
+    if isinstance(value, list):
+        return str(value[0]) if value else default
+    return str(value or default)
+
+
+def nav_url(page: str) -> str:
+    auth = "&domo_auth=ok" if st.session_state.get("authenticated") else ""
+    return f"?page={page}{auth}"
+
+
 def require_login() -> bool:
     password = get_secret("APP_PASSWORD", "")
     if not password:
         return True
+
+    if get_query_value("domo_auth") == "ok":
+        st.session_state["authenticated"] = True
 
     if st.session_state.get("authenticated"):
         return True
@@ -2422,6 +2487,7 @@ def require_login() -> bool:
     if st.button("Entrar", type="primary"):
         if attempt == password:
             st.session_state["authenticated"] = True
+            st.query_params["domo_auth"] = "ok"
             st.rerun()
         else:
             st.error("Clave incorrecta.")
@@ -2728,11 +2794,64 @@ def render_floating_copilot(page: str, posts: pd.DataFrame) -> None:
         <div class="domo-floating-bot">
             <strong><span class="domo-ai-dot"></span> Copiloto leyendo esta pantalla</strong>
             <p>{html.escape(tip)}</p>
-            <a href="?page=COPILOT" target="_self">Preguntar ahora</a>
+            <a href="#copiloto" target="_self">Preguntar aquí</a>
         </div>
         """,
         unsafe_allow_html=True,
     )
+
+
+def render_global_copilot(page: str, posts: pd.DataFrame) -> None:
+    tip = page_tip(page, posts)
+    if "global_copilot_answer" not in st.session_state:
+        st.session_state["global_copilot_answer"] = ""
+
+    st.markdown(
+        f"""
+        <div id="copiloto" class="domo-global-copilot">
+            <div class="domo-global-copilot-head">
+                <div>
+                    <div class="domo-global-copilot-title"><span class="domo-ai-dot"></span> DOMO Copiloto</div>
+                    <div class="domo-global-copilot-tip">{html.escape(tip)}</div>
+                </div>
+                <span class="domo-widget-label">Siempre activo</span>
+            </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    col_input, col_button = st.columns([5, 1.3])
+    with col_input:
+        prompt = st.text_input(
+            "Pregunta rápida",
+            placeholder="Ej: estoy armando un carrusel, qué frase lo hace más guardable?",
+            label_visibility="collapsed",
+            key=f"global_copilot_prompt_{page}",
+        )
+    with col_button:
+        ask = st.button("Preguntar", key=f"global_copilot_ask_{page}", use_container_width=True)
+
+    if ask and prompt.strip():
+        with st.spinner("Copiloto leyendo esta pantalla..."):
+            try:
+                answer = answer_as_domo_assistant(
+                    f"Estoy en la sección {page}. Responde breve, accionable y visual. Pregunta: {prompt}",
+                    posts,
+                )
+            except Exception:
+                answer = (
+                    "Hazlo más simple y más compartible: una idea central, una frase fuerte, "
+                    "un ejemplo visual claro y un cierre que pida guardar, comentar o escribir por DM."
+                )
+        st.session_state["global_copilot_answer"] = answer
+        conn = get_connection()
+        add_assistant_note(conn, prompt, answer)
+        conn.close()
+
+    if st.session_state["global_copilot_answer"]:
+        safe_answer = html.escape(st.session_state["global_copilot_answer"]).replace("\n", "<br>")
+        st.markdown(f'<div class="domo-global-answer">{safe_answer}</div>', unsafe_allow_html=True)
+
+    st.markdown("</div>", unsafe_allow_html=True)
 
 
 def render_publish_calendar(posts: pd.DataFrame) -> None:
@@ -4389,20 +4508,19 @@ def render_monetization(monetization: pd.DataFrame, posts: pd.DataFrame) -> None
     st.dataframe(top_posts[["title", "platform", "pillar", "format", "profile_visit_rate", "quality_comment_rate"]], hide_index=True, use_container_width=True)
 
 
-OS_PAGES = ["TODAY", "COPILOT", "CONTENT", "METRICS"]
+OS_PAGES = ["TODAY", "CONTENT", "METRICS"]
 
 
 def render_os_nav(current: str) -> None:
     items = [
         ("TODAY", "Hoy"),
-        ("COPILOT", "IA"),
         ("CONTENT", "Crear"),
         ("METRICS", "Pulso"),
     ]
     links = []
     for key, label in items:
         active = "active" if key == current else ""
-        links.append(f'<a class="{active}" href="?page={key}" target="_self">{label}</a>')
+        links.append(f'<a class="{active}" href="{nav_url(key)}" target="_self">{label}</a>')
     st.markdown(f'<nav class="domo-bottom-nav">{"".join(links)}</nav>', unsafe_allow_html=True)
 
 
@@ -4491,18 +4609,18 @@ def render_today_os(posts: pd.DataFrame, action_items: pd.DataFrame) -> None:
         f"""
         <div class="domo-os-shell">
             <div class="domo-os-grid">
-                {os_widget("SIGNAL", "Movimiento de hoy", "01", str(reading["next_move"]), "lime", "xl", "?page=CONTENT")}
-                {os_widget("BEST", "Contenido con más señal", "★", best_post, "paper", "lg", "?page=METRICS")}
-                {os_widget("WEAK", f"{weak_label} débil", as_percent(weak_value), "La IA recomienda corregir esta señal primero.", "magenta", "lg", "?page=METRICS")}
-                {os_widget("AI", "Preguntar al copiloto", "IA", "Qué publicar, cuándo, cómo vender o cómo convertir una idea.", "", "md", "?page=COPILOT")}
-                {os_widget("CREATE", "Reel → carrusel", "↗", "Convierte atención en guardados.", "cyan", "md", "?page=CONTENT")}
-                {os_widget("COLLAB", "Oportunidad de marca", "09", "Busca marcas, redacta pitch y guarda seguimiento.", "orange", "md", "?page=CONTENT")}
+                {os_widget("SIGNAL", "Movimiento de hoy", "01", str(reading["next_move"]), "lime", "xl", nav_url("CONTENT"))}
+                {os_widget("BEST", "Contenido con más señal", "★", best_post, "paper", "lg", nav_url("METRICS"))}
+                {os_widget("WEAK", f"{weak_label} débil", as_percent(weak_value), "La IA recomienda corregir esta señal primero.", "magenta", "lg", nav_url("METRICS"))}
+                {os_widget("AI", "Preguntar al copiloto", "IA", "Qué publicar, cuándo, cómo vender o cómo convertir una idea.", "", "md", "#copiloto")}
+                {os_widget("CREATE", "Reel → carrusel", "↗", "Convierte atención en guardados.", "cyan", "md", nav_url("CONTENT"))}
+                {os_widget("COLLAB", "Oportunidad de marca", "09", "Busca marcas, redacta pitch y guarda seguimiento.", "orange", "md", nav_url("CONTENT"))}
                 <div class="domo-widget domo-widget-size-wide">
                     <span class="domo-widget-label">TIMING</span>
                     <div class="domo-widget-title">Mejores días para publicar esta semana</div>
                     <div class="domo-os-calendar">{"".join(days)}</div>
                 </div>
-                {os_widget("READING", "Qué está pasando", "", str(reading["headline"]), "", "side", "?page=METRICS")}
+                {os_widget("READING", "Qué está pasando", "", str(reading["headline"]), "", "side", nav_url("METRICS"))}
             </div>
         </div>
         """,
@@ -4538,12 +4656,12 @@ def render_content_os(
 ) -> None:
     render_os_header("CONTENT", "Biblioteca visual: ideas, carruseles, inspiración, trends, collabs y drafts.", posts)
     counts = [
-        ("Ideas", len(stored_ideas), "Crear posts y Reels", "?page=Ideas", "lime"),
-        ("Carruseles", len(carousels), "Slides listos para copiar", "?page=Carruseles", "paper"),
-        ("Inspiración", len(inspirations), "Links guardados", "?page=Inspiración", "cyan"),
-        ("Trends", len(trends), "Radar web", "?page=Trends", "orange"),
-        ("Collabs", len(collabs), "Marcas y pitch", "?page=Collabs", "magenta"),
-        ("Capturas", len(posts), "Actualizar data", "?page=Capturas", ""),
+        ("Ideas", len(stored_ideas), "Crear posts y Reels", nav_url("CONTENT"), "lime"),
+        ("Carruseles", len(carousels), "Slides listos para copiar", nav_url("CONTENT"), "paper"),
+        ("Inspiración", len(inspirations), "Links guardados", nav_url("CONTENT"), "cyan"),
+        ("Trends", len(trends), "Radar web", nav_url("CONTENT"), "orange"),
+        ("Collabs", len(collabs), "Marcas y pitch", nav_url("CONTENT"), "magenta"),
+        ("Capturas", len(posts), "Actualizar data", nav_url("CONTENT"), ""),
     ]
     st.markdown(
         '<div class="domo-os-shell"><div class="domo-os-grid">'
@@ -4619,13 +4737,11 @@ def main() -> None:
     nav_options = OS_PAGES
     nav_labels = {
         "TODAY": "01 TODAY",
-        "COPILOT": "02 COPILOT",
-        "CONTENT": "03 CONTENT",
-        "METRICS": "04 METRICS",
+        "CONTENT": "02 CONTENT",
+        "METRICS": "03 METRICS",
     }
     nav_help = {
         "TODAY": "Cockpit visual para decidir qué hacer ahora.",
-        "COPILOT": "Chat central para crear, leer métricas y administrar.",
         "CONTENT": "Biblioteca visual de ideas, carruseles, links, trends y collabs.",
         "METRICS": "Señales visuales: qué pegó, qué está débil y qué corregir.",
     }
@@ -4640,7 +4756,8 @@ def main() -> None:
         "Dashboard": "METRICS",
         "Data Center": "METRICS",
         "Admin": "METRICS",
-        "Asistente": "COPILOT",
+        "COPILOT": "TODAY",
+        "Asistente": "TODAY",
         "Ideas": "CONTENT",
         "Carruseles": "CONTENT",
         "Capturas": "CONTENT",
@@ -4648,6 +4765,8 @@ def main() -> None:
         "Inspiración": "CONTENT",
         "Collabs": "CONTENT",
     }
+    if st.session_state.get("page") in aliases:
+        st.session_state["page"] = aliases[str(st.session_state["page"])]
     if query_page in aliases:
         query_page = aliases[query_page]
     if query_page in nav_options:
@@ -4662,15 +4781,16 @@ def main() -> None:
     page = next(key for key, label in nav_labels.items() if label == selected_label)
     st.session_state["page"] = page
     st.query_params["page"] = page
+    if st.session_state.get("authenticated"):
+        st.query_params["domo_auth"] = "ok"
     st.sidebar.caption(nav_help.get(page, ""))
     render_sidebar_copilot(page, posts)
     render_floating_copilot(page, posts)
     render_os_nav(page)
+    render_global_copilot(page, posts)
 
     if page == "TODAY":
         render_today_os(posts, action_items)
-    elif page == "COPILOT":
-        render_copilot_os(posts, assistant_notes)
     elif page == "CONTENT":
         render_content_os(posts, stored_ideas, screenshots, inspirations, trends, collabs, carousels)
     elif page == "METRICS":
