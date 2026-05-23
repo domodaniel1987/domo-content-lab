@@ -2302,6 +2302,113 @@ def inject_styles() -> None:
         .domo-widget-size-md {{ grid-column: span 3; }}
         .domo-widget-size-wide {{ grid-column: span 8; }}
         .domo-widget-size-side {{ grid-column: span 4; }}
+        .domo-live-workspace {{
+            max-width: 1420px;
+            margin: 0 auto 26px;
+        }}
+        .domo-workspace-panel {{
+            min-height: 620px;
+            padding: 18px;
+            border-radius: 34px;
+            background: rgba(10,14,11,.76);
+            border: 1px solid rgba(243,247,234,.10);
+            backdrop-filter: blur(18px);
+        }}
+        .domo-workspace-label {{
+            display: inline-flex;
+            padding: 7px 11px;
+            border-radius: 999px;
+            background: rgba(207,255,79,.14);
+            color: #CFFF4F !important;
+            font-size: .76rem;
+            font-weight: 950;
+            text-transform: uppercase;
+        }}
+        .domo-project-card {{
+            margin: 10px 0;
+            padding: 14px;
+            border-radius: 24px;
+            background: rgba(246,250,239,.06);
+            border: 1px solid rgba(243,247,234,.08);
+        }}
+        .domo-project-card.active {{
+            border-color: rgba(207,255,79,.55);
+            background: linear-gradient(145deg, rgba(207,255,79,.18), rgba(246,250,239,.05));
+        }}
+        .domo-project-thumb {{
+            width: 42px;
+            height: 42px;
+            border-radius: 16px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 10px;
+            background: #CFFF4F;
+            color: #07100D !important;
+            font-weight: 950;
+        }}
+        .domo-project-title {{
+            color: #F6FAEF !important;
+            font-weight: 950;
+            line-height: 1.05;
+            margin-top: 8px;
+        }}
+        .domo-project-meta {{
+            color: rgba(243,247,234,.62) !important;
+            font-size: .78rem;
+            margin-top: 6px;
+        }}
+        .domo-project-score {{
+            display: inline-flex;
+            margin-top: 9px;
+            padding: 6px 9px;
+            border-radius: 999px;
+            background: rgba(243,247,234,.10);
+            color: #F6FAEF !important;
+            font-weight: 900;
+            font-size: .76rem;
+        }}
+        .domo-canvas-title {{
+            color: #F6FAEF !important;
+            font-size: clamp(1.8rem, 3vw, 3.4rem);
+            line-height: .95;
+            font-weight: 950;
+            margin: 12px 0 8px;
+        }}
+        .domo-block-card {{
+            margin: 12px 0;
+            padding: 16px;
+            border-radius: 26px;
+            background: rgba(246,250,239,.07);
+            border: 1px solid rgba(243,247,234,.09);
+        }}
+        .domo-block-card.hot {{
+            background: linear-gradient(145deg, rgba(207,255,79,.20), rgba(246,250,239,.06));
+            border-color: rgba(207,255,79,.26);
+        }}
+        .domo-block-title {{
+            color: #CFFF4F !important;
+            font-weight: 950;
+            font-size: .82rem;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }}
+        .domo-live-workspace textarea,
+        .domo-live-workspace input {{
+            border-radius: 18px !important;
+        }}
+        .domo-copilot-side {{
+            position: sticky;
+            top: 82px;
+        }}
+        .domo-ai-suggestion {{
+            margin-top: 12px;
+            padding: 14px;
+            border-radius: 24px;
+            background: rgba(207,255,79,.13);
+            border: 1px solid rgba(207,255,79,.25);
+            color: #F6FAEF !important;
+        }}
         .domo-os-pills {{
             display: flex;
             flex-wrap: wrap;
@@ -4536,6 +4643,540 @@ def render_monetization(monetization: pd.DataFrame, posts: pd.DataFrame) -> None
 OS_PAGES = ["TODAY", "CONTENT", "METRICS"]
 
 
+def clean_text(value: object, default: str = "") -> str:
+    if value is None:
+        return default
+    try:
+        if pd.isna(value):
+            return default
+    except Exception:
+        pass
+    return str(value)
+
+
+def project_score(row: dict, project_type: str) -> int:
+    priority = clean_text(row.get("priority"), "Media")
+    score = {"Alta": 92, "Media": 74, "Baja": 52}.get(priority, 70)
+    if project_type == "Carrusel":
+        try:
+            slides = json.loads(clean_text(row.get("slides_json"), "[]"))
+        except json.JSONDecodeError:
+            slides = []
+        score = min(96, 72 + len(slides) * 3)
+    if project_type == "Collab":
+        status = clean_text(row.get("status"), "")
+        score = 88 if "contact" in status.lower() else 76
+    return int(score)
+
+
+def project_tone(score: int) -> str:
+    if score >= 88:
+        return "lime"
+    if score >= 76:
+        return "cyan"
+    if score >= 62:
+        return "orange"
+    return "magenta"
+
+
+def build_live_projects(
+    ideas: pd.DataFrame,
+    carousels: pd.DataFrame,
+    inspirations: pd.DataFrame,
+    trends: pd.DataFrame,
+    collabs: pd.DataFrame,
+) -> list[dict]:
+    projects: list[dict] = []
+    for _, row in ideas.iterrows():
+        data = row.to_dict()
+        score = project_score(data, "Idea")
+        projects.append(
+            {
+                "key": f"idea_{data.get('id')}",
+                "table": "content_ideas",
+                "type": clean_text(data.get("format"), "Idea"),
+                "title": clean_text(data.get("title"), "Idea DOMO"),
+                "status": clean_text(data.get("priority"), "Media"),
+                "score": score,
+                "tone": project_tone(score),
+                "row": data,
+            }
+        )
+    for _, row in carousels.iterrows():
+        data = row.to_dict()
+        score = project_score(data, "Carrusel")
+        projects.append(
+            {
+                "key": f"carousel_{data.get('id')}",
+                "table": "carousel_drafts",
+                "type": "Carrusel",
+                "title": clean_text(data.get("title"), "Carrusel DOMO"),
+                "status": clean_text(data.get("objective"), "saves"),
+                "score": score,
+                "tone": project_tone(score),
+                "row": data,
+            }
+        )
+    for _, row in inspirations.head(8).iterrows():
+        data = row.to_dict()
+        projects.append(
+            {
+                "key": f"inspiration_{data.get('id')}",
+                "table": "inspirations",
+                "type": "Inspiración",
+                "title": clean_text(data.get("title"), "Link guardado"),
+                "status": "Radar",
+                "score": 68,
+                "tone": "paper",
+                "row": data,
+            }
+        )
+    for _, row in trends.head(8).iterrows():
+        data = row.to_dict()
+        projects.append(
+            {
+                "key": f"trend_{data.get('id')}",
+                "table": "trend_items",
+                "type": "Trend",
+                "title": clean_text(data.get("title"), "Trend DOMO"),
+                "status": clean_text(data.get("query"), "Web"),
+                "score": 72,
+                "tone": "orange",
+                "row": data,
+            }
+        )
+    for _, row in collabs.head(8).iterrows():
+        data = row.to_dict()
+        score = project_score(data, "Collab")
+        projects.append(
+            {
+                "key": f"collab_{data.get('id')}",
+                "table": "collab_targets",
+                "type": "Collab",
+                "title": clean_text(data.get("name"), "Marca"),
+                "status": clean_text(data.get("status"), "Por investigar"),
+                "score": score,
+                "tone": project_tone(score),
+                "row": data,
+            }
+        )
+    return projects
+
+
+def remember_project_version(project_key: str, label: str, before: str, after: str) -> None:
+    history = st.session_state.setdefault("workspace_versions", {})
+    items = history.setdefault(project_key, [])
+    items.insert(
+        0,
+        {
+            "time": datetime.now().strftime("%H:%M"),
+            "label": label,
+            "before": before[:260],
+            "after": after[:260],
+        },
+    )
+    history[project_key] = items[:8]
+
+
+def render_project_card(project: dict, active: bool) -> None:
+    tone = project.get("tone", "")
+    initials = clean_text(project.get("type"), "P")[:2].upper()
+    active_class = "active" if active else ""
+    st.markdown(
+        f"""
+        <div class="domo-project-card {active_class}">
+            <span class="domo-project-thumb {tone}">{html.escape(initials)}</span>
+            <div class="domo-project-title">{html.escape(clean_text(project.get("title"), "Proyecto DOMO"))}</div>
+            <div class="domo-project-meta">{html.escape(clean_text(project.get("type"), "Contenido"))} · {html.escape(clean_text(project.get("status"), "Activo"))}</div>
+            <span class="domo-project-score">Signal {project.get("score", 70)}%</span>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    if st.button("Abrir proyecto", key=f"open_{project['key']}", use_container_width=True):
+        st.session_state["active_project_key"] = project["key"]
+        st.query_params["project"] = project["key"]
+        st.rerun()
+
+
+def render_version_history(project_key: str) -> None:
+    history = st.session_state.get("workspace_versions", {}).get(project_key, [])
+    if not history:
+        st.caption("Aún no hay versiones en esta sesión.")
+        return
+    for item in history[:5]:
+        st.markdown(
+            f"""
+            <div class="domo-ai-suggestion">
+                <strong>{html.escape(item["time"])} · {html.escape(item["label"])}</strong><br>
+                {html.escape(item["after"])}
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+
+def render_generic_project_canvas(project: dict) -> None:
+    row = project["row"]
+    table = project["table"]
+    item_id = row.get("id")
+    title = clean_text(row.get("title") or row.get("name"), project["title"])
+    st.markdown(f'<div class="domo-canvas-title">{html.escape(title)}</div>', unsafe_allow_html=True)
+    with st.form(f"generic_project_{project['key']}"):
+        edit_title = st.text_input("Nombre", value=title)
+        notes_value = clean_text(row.get("domo_angle") or row.get("why_fit") or row.get("domo_reading") or row.get("source_notes"), "")
+        notes = st.text_area("Lectura DOMO / observaciones", value=notes_value, height=150)
+        extra = st.text_area(
+            "Siguiente movimiento",
+            value=clean_text(row.get("suggested_content") or row.get("approach"), ""),
+            height=130,
+        )
+        saved = st.form_submit_button("Guardar proyecto")
+    if saved and item_id is not None:
+        if table == "inspirations":
+            values = {"title": edit_title, "domo_angle": notes, "suggested_content": extra}
+        elif table == "trend_items":
+            values = {"title": edit_title, "domo_reading": notes}
+        elif table == "collab_targets":
+            values = {"name": edit_title, "why_fit": notes, "approach": extra}
+        else:
+            values = {"title": edit_title}
+        safe_update_record(table, int(item_id), values)
+        remember_project_version(project["key"], "Edición manual", title, edit_title)
+        st.success("Proyecto actualizado.")
+        st.rerun()
+
+
+def render_idea_project_canvas(project: dict) -> None:
+    row = project["row"]
+    item_id = row.get("id")
+    st.markdown(
+        f"""
+        <div class="domo-canvas-title">{html.escape(clean_text(row.get("title"), "Idea DOMO"))}</div>
+        <div class="domo-chip-row">
+            <span class="domo-widget-label">{html.escape(clean_text(row.get("pillar"), "Pilar"))}</span>
+            <span class="domo-widget-label">{html.escape(clean_text(row.get("format"), "Formato"))}</span>
+            <span class="domo-widget-label">Signal {project.get("score", 70)}%</span>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    with st.form(f"idea_canvas_{project['key']}"):
+        title = st.text_input("Título", value=clean_text(row.get("title"), ""))
+        col_a, col_b, col_c = st.columns(3)
+        pillar = col_a.selectbox(
+            "Pilar",
+            ["Así pienso yo", "Creatividad para todos", "DOMO ve el mundo"],
+            index=["Así pienso yo", "Creatividad para todos", "DOMO ve el mundo"].index(clean_text(row.get("pillar"), "Así pienso yo"))
+            if clean_text(row.get("pillar"), "Así pienso yo") in ["Así pienso yo", "Creatividad para todos", "DOMO ve el mundo"]
+            else 0,
+        )
+        format_value = col_b.text_input("Formato", value=clean_text(row.get("format"), ""))
+        priority = col_c.selectbox(
+            "Prioridad",
+            ["Alta", "Media", "Baja"],
+            index=["Alta", "Media", "Baja"].index(clean_text(row.get("priority"), "Media"))
+            if clean_text(row.get("priority"), "Media") in ["Alta", "Media", "Baja"]
+            else 1,
+        )
+        hook = st.text_area("Hook", value=clean_text(row.get("hook"), ""), height=90)
+        share = st.text_area("Mecanismo share/save", value=clean_text(row.get("share_save_mechanism"), ""), height=100)
+        cta = st.text_area("CTA", value=clean_text(row.get("cta"), ""), height=85)
+        reason = st.text_area("Razón / observaciones", value=clean_text(row.get("strategic_reason"), ""), height=130)
+        linkedin = st.text_area("Adaptación LinkedIn", value=clean_text(row.get("linkedin_adaptation"), ""), height=110)
+        saved = st.form_submit_button("Guardar cambios")
+    if saved and item_id is not None:
+        safe_update_record(
+            "content_ideas",
+            int(item_id),
+            {
+                "title": title,
+                "pillar": pillar,
+                "format": format_value,
+                "priority": priority,
+                "hook": hook,
+                "share_save_mechanism": share,
+                "cta": cta,
+                "strategic_reason": reason,
+                "linkedin_adaptation": linkedin,
+            },
+        )
+        remember_project_version(project["key"], "Canvas guardado", clean_text(row.get("title"), ""), title)
+        st.success("Proyecto actualizado.")
+        st.rerun()
+
+
+def render_carousel_project_canvas(project: dict) -> None:
+    row = project["row"]
+    item_id = row.get("id")
+    try:
+        slides = json.loads(clean_text(row.get("slides_json"), "[]"))
+    except json.JSONDecodeError:
+        slides = []
+    st.markdown(
+        f"""
+        <div class="domo-canvas-title">{html.escape(clean_text(row.get("title"), "Carrusel DOMO"))}</div>
+        <div class="domo-chip-row">
+            <span class="domo-widget-label">Carrusel</span>
+            <span class="domo-widget-label">{len(slides)} slides</span>
+            <span class="domo-widget-label">Objetivo: {html.escape(clean_text(row.get("objective"), "saves"))}</span>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    with st.form(f"carousel_canvas_{project['key']}"):
+        title = st.text_input("Título", value=clean_text(row.get("title"), ""))
+        objective = st.text_input("Objetivo", value=clean_text(row.get("objective"), "saves"))
+        edited_slides = []
+        for index, slide in enumerate(slides, start=1):
+            st.markdown(f'<div class="domo-block-title">Slide {index}</div>', unsafe_allow_html=True)
+            text = st.text_area(
+                f"Texto slide {index}",
+                value=clean_text(slide.get("text") or slide.get("copy") or slide.get("line"), ""),
+                height=80,
+                key=f"slide_text_{project['key']}_{index}",
+            )
+            visual = st.text_input(
+                f"Visual slide {index}",
+                value=clean_text(slide.get("visual"), ""),
+                key=f"slide_visual_{project['key']}_{index}",
+            )
+            edited = dict(slide)
+            edited["text"] = text
+            edited["visual"] = visual
+            edited_slides.append(edited)
+        caption = st.text_area("Caption", value=clean_text(row.get("caption"), ""), height=120)
+        cta = st.text_area("CTA", value=clean_text(row.get("cta"), ""), height=80)
+        saved = st.form_submit_button("Guardar carrusel")
+    if saved and item_id is not None:
+        safe_update_record(
+            "carousel_drafts",
+            int(item_id),
+            {
+                "title": title,
+                "objective": objective,
+                "slides_json": json.dumps(edited_slides, ensure_ascii=False),
+                "caption": caption,
+                "cta": cta,
+            },
+        )
+        remember_project_version(project["key"], "Carrusel guardado", clean_text(row.get("title"), ""), title)
+        st.success("Carrusel actualizado.")
+        st.rerun()
+
+
+def render_project_canvas(project: dict, posts: pd.DataFrame) -> None:
+    st.markdown('<span class="domo-workspace-label">Canvas editable</span>', unsafe_allow_html=True)
+    if project["table"] == "content_ideas":
+        render_idea_project_canvas(project)
+    elif project["table"] == "carousel_drafts":
+        render_carousel_project_canvas(project)
+    else:
+        render_generic_project_canvas(project)
+    st.markdown("#### Versiones de esta sesión")
+    render_version_history(project["key"])
+
+
+def get_copilot_blocks(project: dict) -> dict[str, str]:
+    row = project["row"]
+    if project["table"] == "content_ideas":
+        return {
+            "Hook": clean_text(row.get("hook"), ""),
+            "CTA": clean_text(row.get("cta"), ""),
+            "Share/save": clean_text(row.get("share_save_mechanism"), ""),
+            "Razón": clean_text(row.get("strategic_reason"), ""),
+            "LinkedIn": clean_text(row.get("linkedin_adaptation"), ""),
+        }
+    if project["table"] == "carousel_drafts":
+        try:
+            slides = json.loads(clean_text(row.get("slides_json"), "[]"))
+        except json.JSONDecodeError:
+            slides = []
+        blocks = {
+            "Caption": clean_text(row.get("caption"), ""),
+            "CTA": clean_text(row.get("cta"), ""),
+        }
+        for index, slide in enumerate(slides, start=1):
+            blocks[f"Slide {index}"] = clean_text(slide.get("text") or slide.get("copy") or slide.get("line"), "")
+        return blocks
+    return {
+        "Lectura": clean_text(row.get("domo_angle") or row.get("why_fit") or row.get("domo_reading"), ""),
+        "Siguiente": clean_text(row.get("suggested_content") or row.get("approach"), ""),
+    }
+
+
+def apply_copilot_block(project: dict, block: str, text: str) -> None:
+    row = project["row"]
+    item_id = row.get("id")
+    if item_id is None:
+        return
+    table = project["table"]
+    before = get_copilot_blocks(project).get(block, "")
+    if table == "content_ideas":
+        field_map = {
+            "Hook": "hook",
+            "CTA": "cta",
+            "Share/save": "share_save_mechanism",
+            "Razón": "strategic_reason",
+            "LinkedIn": "linkedin_adaptation",
+        }
+        field = field_map.get(block)
+        if field:
+            safe_update_record(table, int(item_id), {field: text})
+    elif table == "carousel_drafts":
+        if block in {"Caption", "CTA"}:
+            safe_update_record(table, int(item_id), {block.lower(): text})
+        elif block.startswith("Slide "):
+            try:
+                slide_index = int(block.split(" ")[1]) - 1
+                slides = json.loads(clean_text(row.get("slides_json"), "[]"))
+            except (ValueError, json.JSONDecodeError, IndexError):
+                slides = []
+            if 0 <= slide_index < len(slides):
+                slides[slide_index]["text"] = text
+                safe_update_record(table, int(item_id), {"slides_json": json.dumps(slides, ensure_ascii=False)})
+    elif table == "inspirations":
+        safe_update_record(table, int(item_id), {"domo_angle": text})
+    elif table == "trend_items":
+        safe_update_record(table, int(item_id), {"domo_reading": text})
+    elif table == "collab_targets":
+        field = "approach" if block == "Siguiente" else "why_fit"
+        safe_update_record(table, int(item_id), {field: text})
+    remember_project_version(project["key"], f"IA editó {block}", before, text)
+
+
+def render_workspace_copilot(project: dict, posts: pd.DataFrame) -> None:
+    st.markdown('<span class="domo-workspace-label">Copiloto de proyecto</span>', unsafe_allow_html=True)
+    st.markdown(f"### {clean_text(project.get('title'), 'Proyecto')}")
+    st.caption("Edita un bloque sin borrar el resto. La IA trabaja encima de esta pieza.")
+    blocks = get_copilot_blocks(project)
+    block_names = list(blocks.keys()) or ["Bloque"]
+    block = st.selectbox("Bloque a mejorar", block_names, key=f"copilot_block_{project['key']}")
+    quick_actions = [
+        "hazlo más shareable",
+        "reduce texto",
+        "más LATAM calle",
+        "más autoridad internacional",
+        "adaptar para LinkedIn",
+    ]
+    st.markdown('<div class="domo-chip-row">', unsafe_allow_html=True)
+    action_cols = st.columns(2)
+    for index, action in enumerate(quick_actions):
+        with action_cols[index % 2]:
+            if st.button(action.capitalize(), key=f"quick_{project['key']}_{index}", use_container_width=True):
+                st.session_state[f"copilot_task_{project['key']}"] = action
+    st.markdown("</div>", unsafe_allow_html=True)
+    task = st.text_area(
+        "Qué quieres cambiar",
+        value=st.session_state.pop(f"copilot_task_{project['key']}", ""),
+        placeholder="Ej: haz slide 3 más corto, más visual y más guardable",
+        height=105,
+        key=f"copilot_task_input_{project['key']}",
+    )
+    if st.button("Refinar bloque", key=f"refine_{project['key']}", type="primary", use_container_width=True):
+        current = blocks.get(block, "")
+        instruction = task.strip() or "mejora este bloque para que sea más claro, más visual y más guardable"
+        with st.spinner("Copiloto afinando solo este bloque..."):
+            try:
+                suggestion = answer_as_domo_assistant(
+                    "Actúa como director creativo DOMO. Edita SOLO el bloque indicado. "
+                    "Devuelve únicamente el texto final del bloque, sin JSON, sin markdown largo, sin explicación. "
+                    "Mantén criterio visual LATAM, calle, editorial, internacional y útil.\n\n"
+                    f"Proyecto: {project['title']}\nTipo: {project['type']}\nBloque: {block}\n"
+                    f"Texto actual: {current}\nInstrucción: {instruction}",
+                    posts,
+                )
+            except Exception:
+                suggestion = f"{current}\n\nAjuste DOMO: una frase más concreta, una imagen más calle y un cierre que invite a guardar o responder."
+        st.session_state[f"ai_suggestion_{project['key']}"] = {"block": block, "text": suggestion}
+    suggestion = st.session_state.get(f"ai_suggestion_{project['key']}")
+    if suggestion:
+        st.markdown(
+            f"""
+            <div class="domo-ai-suggestion">
+                <strong>Sugerencia para {html.escape(suggestion["block"])}</strong><br>
+                {html.escape(clean_text(suggestion["text"]))}
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+        col_apply, col_clear = st.columns(2)
+        with col_apply:
+            if st.button("Aplicar", key=f"apply_ai_{project['key']}", use_container_width=True):
+                apply_copilot_block(project, suggestion["block"], clean_text(suggestion["text"]))
+                st.session_state.pop(f"ai_suggestion_{project['key']}", None)
+                st.success("Bloque actualizado.")
+                st.rerun()
+        with col_clear:
+            if st.button("Descartar", key=f"clear_ai_{project['key']}", use_container_width=True):
+                st.session_state.pop(f"ai_suggestion_{project['key']}", None)
+                st.rerun()
+
+
+def render_live_workspace(
+    posts: pd.DataFrame,
+    stored_ideas: pd.DataFrame,
+    screenshots: pd.DataFrame,
+    inspirations: pd.DataFrame,
+    trends: pd.DataFrame,
+    collabs: pd.DataFrame,
+    carousels: pd.DataFrame,
+) -> None:
+    projects = build_live_projects(stored_ideas, carousels, inspirations, trends, collabs)
+    query_project = get_query_value("project", "")
+    if query_project:
+        st.session_state["active_project_key"] = query_project
+    if projects and st.session_state.get("active_project_key") not in {item["key"] for item in projects}:
+        st.session_state["active_project_key"] = projects[0]["key"]
+    active_key = st.session_state.get("active_project_key")
+    active_project = next((item for item in projects if item["key"] == active_key), projects[0] if projects else None)
+
+    st.markdown('<div class="domo-live-workspace">', unsafe_allow_html=True)
+    left, center, right = st.columns([1.05, 2.15, 1.15], gap="medium")
+    with left:
+        st.markdown('<div class="domo-workspace-panel">', unsafe_allow_html=True)
+        st.markdown('<span class="domo-workspace-label">Proyectos vivos</span>', unsafe_allow_html=True)
+        st.caption("Abre una pieza. Edita. Pídele al copiloto cambios puntuales.")
+        if not projects:
+            st.info("Todavía no hay proyectos. Crea una idea o carrusel abajo.")
+        for project in projects[:24]:
+            render_project_card(project, project["key"] == active_key)
+        st.markdown("</div>", unsafe_allow_html=True)
+    with center:
+        st.markdown('<div class="domo-workspace-panel">', unsafe_allow_html=True)
+        if active_project:
+            render_project_canvas(active_project, posts)
+        else:
+            st.markdown('<div class="domo-canvas-title">Crea tu primer proyecto vivo</div>', unsafe_allow_html=True)
+            st.write("Genera una idea o carrusel abajo. Luego se abrirá aquí como workspace editable.")
+        st.markdown("</div>", unsafe_allow_html=True)
+    with right:
+        st.markdown('<div class="domo-workspace-panel domo-copilot-side">', unsafe_allow_html=True)
+        if active_project:
+            render_workspace_copilot(active_project, posts)
+        else:
+            st.markdown("### Copiloto")
+            st.write("Cuando abras un proyecto, aquí podrás pedir mejoras por bloque.")
+        st.markdown("</div>", unsafe_allow_html=True)
+    st.markdown("</div>", unsafe_allow_html=True)
+
+    with st.expander("Crear nuevo / herramientas de archivo"):
+        tools = ["Ideas", "Carruseles", "Inspiración", "Trends", "Collabs", "Capturas"]
+        section = st.radio("Abrir herramienta", tools, horizontal=True, key="content_tool_selector_live")
+        if section == "Ideas":
+            render_ideas(posts, stored_ideas)
+        elif section == "Carruseles":
+            render_carousels(posts, inspirations, carousels)
+        elif section == "Inspiración":
+            render_inspiration_lab(posts, inspirations)
+        elif section == "Trends":
+            render_trend_lab(posts, trends)
+        elif section == "Collabs":
+            render_collab_lab(posts, collabs)
+        else:
+            render_capture_lab(posts, screenshots)
+
+
 def render_os_nav(current: str) -> None:
     items = [
         ("TODAY", "Hoy"),
@@ -4679,46 +5320,12 @@ def render_content_os(
     collabs: pd.DataFrame,
     carousels: pd.DataFrame,
 ) -> None:
-    render_os_header("CONTENT", "Biblioteca visual: ideas, carruseles, inspiración, trends, collabs y drafts.", posts)
-    counts = [
-        ("Ideas", len(stored_ideas), "Crear posts y Reels", nav_url("CONTENT", "Ideas"), "lime"),
-        ("Carruseles", len(carousels), "Slides listos para copiar", nav_url("CONTENT", "Carruseles"), "paper"),
-        ("Inspiración", len(inspirations), "Links guardados", nav_url("CONTENT", "Inspiración"), "cyan"),
-        ("Trends", len(trends), "Radar web", nav_url("CONTENT", "Trends"), "orange"),
-        ("Collabs", len(collabs), "Marcas y pitch", nav_url("CONTENT", "Collabs"), "magenta"),
-        ("Capturas", len(posts), "Actualizar data", nav_url("CONTENT", "Capturas"), ""),
-    ]
-    st.markdown(
-        '<div class="domo-os-shell"><div class="domo-os-grid">'
-        + "".join(os_widget("LIBRARY", title, str(count), body, tone, "lg", href) for title, count, body, href, tone in counts)
-        + "</div></div>",
-        unsafe_allow_html=True,
+    render_os_header(
+        "CONTENT",
+        "Workspace vivo: cada idea, carrusel, trend o collab se abre como proyecto editable con IA contextual.",
+        posts,
     )
-    tools = ["Ideas", "Carruseles", "Inspiración", "Trends", "Collabs", "Capturas"]
-    query_tool = get_query_value("tool", "Ideas")
-    tool_index = tools.index(query_tool) if query_tool in tools else 0
-    if query_tool in tools and st.session_state.get("content_tool_selector") != query_tool:
-        st.session_state["content_tool_selector"] = query_tool
-    section = st.radio(
-        "Abrir herramienta",
-        tools,
-        index=tool_index,
-        horizontal=True,
-        key="content_tool_selector",
-    )
-    st.query_params["tool"] = section
-    if section == "Ideas":
-        render_ideas(posts, stored_ideas)
-    elif section == "Carruseles":
-        render_carousels(posts, inspirations, carousels)
-    elif section == "Inspiración":
-        render_inspiration_lab(posts, inspirations)
-    elif section == "Trends":
-        render_trend_lab(posts, trends)
-    elif section == "Collabs":
-        render_collab_lab(posts, collabs)
-    else:
-        render_capture_lab(posts, screenshots)
+    render_live_workspace(posts, stored_ideas, screenshots, inspirations, trends, collabs, carousels)
 
 
 def render_metrics_os(posts: pd.DataFrame, profile: pd.DataFrame, daily: pd.DataFrame, monetization: pd.DataFrame) -> None:
@@ -4818,7 +5425,8 @@ def main() -> None:
     st.sidebar.caption(nav_help.get(page, ""))
     render_sidebar_copilot(page, posts)
     render_os_nav(page)
-    render_global_copilot(page, posts)
+    if page != "CONTENT":
+        render_global_copilot(page, posts)
 
     if page == "TODAY":
         render_today_os(posts, action_items)
