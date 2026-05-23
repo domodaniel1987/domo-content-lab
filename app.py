@@ -2838,7 +2838,8 @@ def render_global_copilot(page: str, posts: pd.DataFrame) -> None:
         with st.spinner("Copiloto leyendo esta pantalla..."):
             try:
                 answer = answer_as_domo_assistant(
-                    f"Estoy en la sección {page}. Responde breve, accionable y visual. Pregunta: {prompt}",
+                    f"Estoy en la sección {page}. Responde breve, accionable y visual. No devuelvas JSON ni código. "
+                    f"Si propones carrusel, escribe tarjetas claras por imagen. Pregunta: {prompt}",
                     posts,
                 )
             except Exception:
@@ -2852,8 +2853,9 @@ def render_global_copilot(page: str, posts: pd.DataFrame) -> None:
         conn.close()
 
     if st.session_state["global_copilot_answer"]:
-        safe_answer = html.escape(st.session_state["global_copilot_answer"]).replace("\n", "<br>")
-        st.markdown(f'<div class="domo-global-answer">{safe_answer}</div>', unsafe_allow_html=True)
+        st.markdown('<div class="domo-global-answer">', unsafe_allow_html=True)
+        render_ai_answer(str(st.session_state["global_copilot_answer"]))
+        st.markdown("</div>", unsafe_allow_html=True)
 
     st.markdown("</div>", unsafe_allow_html=True)
 
@@ -3854,6 +3856,19 @@ def render_ai_answer(answer: str) -> None:
                 st.markdown("#### Frases por imagen")
                 for slide in idea["slides"]:
                     render_slide_card(slide, key_prefix=f"idea_{idea.get('title', 'idea')}")
+        carousel_payload = payload.get("carousel_json_shape") or payload.get("carousel") or payload.get("carousel_draft")
+        if isinstance(carousel_payload, dict) and isinstance(carousel_payload.get("slides"), list):
+            st.markdown("### Carrusel listo")
+            if carousel_payload.get("objective"):
+                st.markdown(f"**Objetivo:** {carousel_payload['objective']}")
+            for slide in carousel_payload["slides"]:
+                render_slide_card(slide, key_prefix=f"ai_{carousel_payload.get('title', 'carousel')}")
+            if carousel_payload.get("caption"):
+                st.markdown("#### Caption")
+                st.write(carousel_payload["caption"])
+            if carousel_payload.get("cta"):
+                st.markdown("#### CTA")
+                st.write(carousel_payload["cta"])
         return
 
     if isinstance(payload.get("slides"), list):
@@ -3871,10 +3886,16 @@ def render_ai_answer(answer: str) -> None:
         return
 
     for key, value in payload.items():
+        if key in {"carousel_json_shape", "carousel", "carousel_draft"} and isinstance(value, dict):
+            st.markdown(f"### {value.get('title', 'Carrusel DOMO')}")
+            if isinstance(value.get("slides"), list):
+                for slide in value["slides"]:
+                    render_slide_card(slide, key_prefix=f"payload_{value.get('title', 'carousel')}")
+            continue
         pretty_key = key.replace("_", " ").title()
         st.markdown(f"**{pretty_key}:**")
         if isinstance(value, (dict, list)):
-            st.json(value)
+            st.write(value)
         else:
             st.write(value)
 
