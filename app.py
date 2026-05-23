@@ -4,6 +4,7 @@ import os
 import json
 import socket
 import html
+import re
 from datetime import datetime, timedelta
 from pathlib import Path
 
@@ -2408,6 +2409,122 @@ def inject_styles() -> None:
             background: rgba(207,255,79,.13);
             border: 1px solid rgba(207,255,79,.25);
             color: #F6FAEF !important;
+        }}
+        .domo-chat-home {{
+            display: grid;
+            grid-template-columns: minmax(0, 1.75fr) minmax(260px, .85fr);
+            gap: 18px;
+            max-width: 1240px;
+            margin: 0 auto;
+        }}
+        .domo-command-panel {{
+            padding: clamp(18px, 3vw, 28px);
+            border-radius: 36px;
+            background: linear-gradient(145deg, rgba(16,21,17,.98), rgba(8,12,9,.98));
+            border: 1px solid rgba(243,247,234,.10);
+            box-shadow: var(--md-sys-elevation-2);
+        }}
+        .domo-command-title {{
+            color: #F6FAEF !important;
+            font-size: clamp(2.4rem, 7vw, 5.8rem);
+            line-height: .84;
+            font-weight: 950;
+            margin: 12px 0 14px;
+        }}
+        .domo-prompt-chip {{
+            display: inline-flex;
+            align-items: center;
+            min-height: 42px;
+            padding: 10px 14px;
+            margin: 5px 6px 5px 0;
+            border-radius: 999px;
+            background: rgba(243,247,234,.08);
+            border: 1px solid rgba(243,247,234,.10);
+            color: #F6FAEF !important;
+            font-weight: 850;
+        }}
+        .domo-answer-grid {{
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 14px;
+            margin-top: 18px;
+        }}
+        .domo-live-card {{
+            padding: 18px;
+            border-radius: 30px;
+            background: rgba(246,250,239,.07);
+            border: 1px solid rgba(243,247,234,.10);
+            min-height: 190px;
+            animation: domo-enter .46s var(--domo-ease-out) both;
+        }}
+        .domo-live-card.lime {{
+            background: linear-gradient(145deg, rgba(207,255,79,.92), rgba(207,255,79,.55));
+        }}
+        .domo-live-card.cyan {{
+            background: linear-gradient(145deg, rgba(143,231,255,.30), rgba(246,250,239,.06));
+        }}
+        .domo-live-card.magenta {{
+            background: linear-gradient(145deg, rgba(255,132,214,.26), rgba(246,250,239,.06));
+        }}
+        .domo-live-card.orange {{
+            background: linear-gradient(145deg, rgba(243,168,59,.28), rgba(246,250,239,.06));
+        }}
+        .domo-live-card.lime,
+        .domo-live-card.lime * {{
+            color: #07100D !important;
+        }}
+        .domo-live-card-title {{
+            font-size: clamp(1.35rem, 2.4vw, 2.4rem);
+            line-height: .95;
+            font-weight: 950;
+            margin: 14px 0 10px;
+            color: #F6FAEF !important;
+        }}
+        .domo-live-card-meta {{
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }}
+        .domo-live-card-meta span {{
+            border-radius: 999px;
+            padding: 6px 9px;
+            background: rgba(243,247,234,.10);
+            color: inherit !important;
+            font-size: .74rem;
+            font-weight: 900;
+        }}
+        .domo-card-actions {{
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 8px;
+            margin-top: 10px;
+        }}
+        .domo-side-signal {{
+            position: sticky;
+            top: 88px;
+            padding: 18px;
+            border-radius: 32px;
+            background: rgba(16,21,17,.90);
+            border: 1px solid rgba(243,247,234,.10);
+        }}
+        .domo-chat-input-wrap {{
+            margin-top: 16px;
+            padding: 10px;
+            border-radius: 28px;
+            background: rgba(243,247,234,.07);
+            border: 1px solid rgba(243,247,234,.10);
+        }}
+        @media (max-width: 900px) {{
+            .domo-chat-home {{
+                grid-template-columns: 1fr;
+            }}
+            .domo-answer-grid {{
+                grid-template-columns: 1fr;
+            }}
+            .domo-side-signal {{
+                position: relative;
+                top: 0;
+            }}
         }}
         .domo-os-pills {{
             display: flex;
@@ -5179,8 +5296,8 @@ def render_live_workspace(
 
 def render_os_nav(current: str) -> None:
     items = [
-        ("TODAY", "Hoy"),
-        ("CONTENT", "Crear"),
+        ("TODAY", "Chat"),
+        ("CONTENT", "Workspace"),
         ("METRICS", "Pulso"),
     ]
     links = []
@@ -5236,7 +5353,410 @@ def os_widget(
     )
 
 
-def render_today_os(posts: pd.DataFrame, action_items: pd.DataFrame) -> None:
+def ai_card_from_text(text: str, source_prompt: str = "") -> dict:
+    return {
+        "title": "Respuesta DOMO",
+        "pillar": "Así pienso yo",
+        "format": "Nota estratégica",
+        "priority": "Alta",
+        "hook": clean_text(text)[:420],
+        "share_save_mechanism": "Convertir esta lectura en una pieza visual concreta.",
+        "cta": "Guardar como proyecto y trabajar el bloque más fuerte.",
+        "strategic_reason": source_prompt or "Respuesta conversacional guardable.",
+        "linkedin_adaptation": "Expandir como post de criterio creativo.",
+        "status": "Draft",
+    }
+
+
+def extract_cards_from_answer(answer: str, source_prompt: str = "") -> list[dict]:
+    payload = parse_ai_payload(answer)
+    cards: list[dict] = []
+    if isinstance(payload, dict):
+        if isinstance(payload.get("ideas"), list):
+            cards.extend([item for item in payload["ideas"] if isinstance(item, dict)])
+        carousel_payload = payload.get("carousel_json_shape") or payload.get("carousel") or payload.get("carousel_draft")
+        if isinstance(carousel_payload, dict):
+            card = dict(carousel_payload)
+            card.setdefault("format", "Carrusel")
+            card.setdefault("pillar", "DOMO ve el mundo")
+            card.setdefault("priority", "Alta")
+            cards.append(card)
+        if isinstance(payload.get("slides"), list):
+            card = dict(payload)
+            card.setdefault("format", "Carrusel")
+            card.setdefault("pillar", "DOMO ve el mundo")
+            card.setdefault("priority", "Alta")
+            cards.append(card)
+    if not cards:
+        cards = [ai_card_from_text(answer, source_prompt)]
+    for index, card in enumerate(cards, start=1):
+        card.setdefault("_temp_id", f"{datetime.now().timestamp()}_{index}")
+        card.setdefault("status", "Draft")
+    return cards
+
+
+def save_card_as_project(card: dict) -> None:
+    conn = get_connection()
+    reason = clean_text(card.get("strategic_reason"), "")
+    reference = clean_text(card.get("reference_url"), "")
+    if reference:
+        reason = f"{reason}\nReferencia: {reference}".strip()
+    add_content_idea(
+        conn,
+        {
+            "pillar": clean_text(card.get("pillar"), "Así pienso yo"),
+            "format": clean_text(card.get("format"), "Idea"),
+            "title": clean_text(card.get("title"), "Idea DOMO"),
+            "hook": clean_text(card.get("hook"), ""),
+            "share_save_mechanism": clean_text(card.get("share_save_mechanism"), ""),
+            "cta": clean_text(card.get("cta"), ""),
+            "strategic_reason": reason,
+            "priority": clean_text(card.get("priority"), "Media"),
+            "linkedin_adaptation": clean_text(card.get("linkedin_adaptation"), ""),
+        },
+    )
+    conn.close()
+
+
+def duplicate_home_card(index: int) -> None:
+    cards = st.session_state.setdefault("home_live_cards", [])
+    if 0 <= index < len(cards):
+        clone = dict(cards[index])
+        clone["title"] = f"{clone.get('title', 'Idea DOMO')} / variante"
+        clone["_temp_id"] = f"{datetime.now().timestamp()}_{index}_copy"
+        cards.insert(index + 1, clone)
+
+
+def delete_home_card(index: int) -> None:
+    cards = st.session_state.setdefault("home_live_cards", [])
+    if 0 <= index < len(cards):
+        cards.pop(index)
+
+
+def find_card_index_from_command(command: str) -> int | None:
+    lowered = command.lower()
+    patterns = [
+        r"\b(?:idea|tarjeta|card)\s+(\d+)",
+        r"\b(?:la|el)\s+(\d+)\b",
+        r"\b(\d+)\b",
+    ]
+    for pattern in patterns:
+        match = re.search(pattern, lowered)
+        if match:
+            return int(match.group(1)) - 1
+    return None
+
+
+def apply_home_command(command: str) -> bool:
+    match = re.search(r"\bborra(?:r)?\s+(?:la\s+)?(\d+)", command.lower())
+    if match:
+        delete_home_card(int(match.group(1)) - 1)
+        return True
+    match = re.search(r"\b(?:duplica|duplicar)\s+(?:la\s+)?(\d+)", command.lower())
+    if match:
+        duplicate_home_card(int(match.group(1)) - 1)
+        return True
+    match = re.search(r"\b(?:descarta|descartar)\s+(?:la\s+)?(\d+)", command.lower())
+    if match:
+        index = int(match.group(1)) - 1
+        cards = st.session_state.setdefault("home_live_cards", [])
+        if 0 <= index < len(cards):
+            cards[index]["status"] = "Descartada"
+            return True
+    match = re.search(r"\b(?:lista|ready|prepara)\s+(?:la\s+)?(\d+)", command.lower())
+    if match:
+        index = int(match.group(1)) - 1
+        cards = st.session_state.setdefault("home_live_cards", [])
+        if 0 <= index < len(cards):
+            cards[index]["status"] = "Ready"
+            return True
+    return False
+
+
+def should_refine_existing_card(command: str) -> bool:
+    if not st.session_state.get("home_live_cards"):
+        return False
+    if find_card_index_from_command(command) is None:
+        return False
+    triggers = [
+        "mejora", "mejorar", "hazla", "hazlo", "edita", "editar", "cambia", "cambiar",
+        "mas ", "más ", "menos ", "fotograf", "calle", "ecuador", "latam", "hook",
+        "cta", "copy", "visual", "linkedin", "reel", "carrusel", "remix",
+    ]
+    lowered = command.lower()
+    return any(trigger in lowered for trigger in triggers)
+
+
+def refine_existing_home_card(command: str, posts: pd.DataFrame) -> bool:
+    index = find_card_index_from_command(command)
+    cards = st.session_state.setdefault("home_live_cards", [])
+    if index is None or index < 0 or index >= len(cards):
+        return False
+    original = cards[index]
+    with st.spinner("Ajustando solo esa tarjeta..."):
+        try:
+            answer = answer_as_domo_assistant(
+                "Actualiza SOLO esta tarjeta de contenido. Devuelve JSON con un objeto 'idea' y conserva lo que ya funciona. "
+                "No hagas una lista nueva. Cambia únicamente lo necesario según la instrucción de DOMO. "
+                "Campos: title, pillar, format, hook, share_save_mechanism, cta, strategic_reason, priority, linkedin_adaptation.\n\n"
+                f"Tarjeta actual:\n{json.dumps(original, ensure_ascii=False)}\n\n"
+                f"Instrucción DOMO:\n{command}",
+                posts,
+            )
+            payload = parse_ai_payload(answer)
+            refined = None
+            if isinstance(payload, dict):
+                if isinstance(payload.get("idea"), dict):
+                    refined = payload["idea"]
+                elif isinstance(payload.get("ideas"), list) and payload["ideas"]:
+                    refined = payload["ideas"][0]
+            if not isinstance(refined, dict):
+                refined = extract_cards_from_answer(answer, command)[0]
+        except Exception:
+            refined = dict(original)
+            refined["strategic_reason"] = (
+                clean_text(original.get("strategic_reason"), "") + "\nAjuste pendiente: " + command
+            ).strip()
+    refined["_temp_id"] = original.get("_temp_id", f"{datetime.now().timestamp()}_{index}")
+    refined["status"] = original.get("status", "Draft")
+    cards[index] = {**original, **refined}
+    conn = get_connection()
+    add_assistant_note(conn, command, json.dumps(cards[index], ensure_ascii=False))
+    conn.close()
+    return True
+
+
+def render_home_card(card: dict, index: int, posts: pd.DataFrame) -> None:
+    tone = project_tone(project_score(card, clean_text(card.get("format"), "Idea")))
+    st.markdown(
+        f"""
+        <div class="domo-live-card {tone}">
+            <div class="domo-live-card-meta">
+                <span>{html.escape(clean_text(card.get("format"), "Idea"))}</span>
+                <span>{html.escape(clean_text(card.get("priority"), "Media"))}</span>
+                <span>{html.escape(clean_text(card.get("status"), "Draft"))}</span>
+            </div>
+            <div class="domo-live-card-title">{html.escape(clean_text(card.get("title"), "Idea DOMO"))}</div>
+            <p><strong>Hook:</strong> {html.escape(clean_text(card.get("hook"), ""))}</p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    with st.expander("Editar esta tarjeta"):
+        with st.form(f"home_card_form_{index}_{card.get('_temp_id', index)}"):
+            title = st.text_input("Título", value=clean_text(card.get("title"), ""))
+            col_a, col_b = st.columns(2)
+            format_value = col_a.text_input("Formato", value=clean_text(card.get("format"), ""))
+            priority = col_b.selectbox(
+                "Estado",
+                ["Draft", "Ready", "Descartada"],
+                index=["Draft", "Ready", "Descartada"].index(clean_text(card.get("status"), "Draft"))
+                if clean_text(card.get("status"), "Draft") in ["Draft", "Ready", "Descartada"]
+                else 0,
+            )
+            hook = st.text_area("Hook", value=clean_text(card.get("hook"), ""), height=80)
+            visual = st.text_area("Dirección visual / mecanismo", value=clean_text(card.get("share_save_mechanism"), ""), height=90)
+            cta = st.text_area("CTA", value=clean_text(card.get("cta"), ""), height=70)
+            reason = st.text_area("Notas / criterio", value=clean_text(card.get("strategic_reason"), ""), height=100)
+            reference = st.text_input("Referencia / link", value=clean_text(card.get("reference_url"), ""))
+            linkedin = st.text_area("LinkedIn", value=clean_text(card.get("linkedin_adaptation"), ""), height=80)
+            saved = st.form_submit_button("Actualizar tarjeta")
+        if saved:
+            st.session_state["home_live_cards"][index].update(
+                {
+                    "title": title,
+                    "format": format_value,
+                    "status": priority,
+                    "hook": hook,
+                    "share_save_mechanism": visual,
+                    "cta": cta,
+                    "strategic_reason": reason,
+                    "reference_url": reference,
+                    "linkedin_adaptation": linkedin,
+                }
+            )
+            st.rerun()
+    col_a, col_b, col_c = st.columns(3)
+    with col_a:
+        if st.button("Guardar", key=f"save_home_card_{index}", use_container_width=True):
+            save_card_as_project(st.session_state["home_live_cards"][index])
+            st.success("Guardado como proyecto.")
+    with col_b:
+        if st.button("Duplicar", key=f"duplicate_home_card_{index}", use_container_width=True):
+            duplicate_home_card(index)
+            st.rerun()
+    with col_c:
+        if st.button("Borrar", key=f"delete_home_card_{index}", use_container_width=True):
+            delete_home_card(index)
+            st.rerun()
+    col_d, col_e, col_f, col_g = st.columns(4)
+    with col_d:
+        if st.button("Remix", key=f"improve_home_card_{index}", use_container_width=True):
+            st.session_state["home_pending_prompt"] = (
+                f"Me gusta esta idea pero mejórala sin cambiar su esencia. Hazla más visual, más DOMO, más guardable:\n"
+                f"{json.dumps(st.session_state['home_live_cards'][index], ensure_ascii=False)}"
+            )
+            st.rerun()
+    with col_e:
+        if st.button("A carrusel", key=f"carousel_home_card_{index}", use_container_width=True):
+            st.session_state["page"] = "CONTENT"
+            st.session_state["carousel_seed"] = json.dumps(st.session_state["home_live_cards"][index], ensure_ascii=False)
+            st.query_params["page"] = "CONTENT"
+            st.rerun()
+    with col_f:
+        if st.button("A Reel", key=f"reel_home_card_{index}", use_container_width=True):
+            st.session_state["home_pending_prompt"] = (
+                "Convierte esta idea en un Reel de 20-35 segundos. Dame hook de 1.7 segundos, guion por tomas, texto en pantalla, "
+                "gesto visual, audio sugerido y CTA. Mantén criterio DOMO, calle, Ecuador/LATAM y cero genérico:\n"
+                f"{json.dumps(st.session_state['home_live_cards'][index], ensure_ascii=False)}"
+            )
+            st.rerun()
+    with col_g:
+        if st.button("A LinkedIn", key=f"linkedin_home_card_{index}", use_container_width=True):
+            st.session_state["home_pending_prompt"] = (
+                "Convierte esta idea en un post de LinkedIn para atraer workshops, consultoría o collabs. "
+                "No devuelvas JSON, dame una versión lista para editar:\n"
+                f"{json.dumps(st.session_state['home_live_cards'][index], ensure_ascii=False)}"
+            )
+            st.rerun()
+
+
+def render_chat_home_os(
+    posts: pd.DataFrame,
+    stored_ideas: pd.DataFrame,
+    carousels: pd.DataFrame,
+    inspirations: pd.DataFrame,
+    trends: pd.DataFrame,
+    collabs: pd.DataFrame,
+) -> None:
+    reading = build_metric_reading(posts)
+    if "home_live_cards" not in st.session_state:
+        st.session_state["home_live_cards"] = []
+
+    st.markdown('<div class="domo-chat-home">', unsafe_allow_html=True)
+    main_col, side_col = st.columns([1.75, .85], gap="medium")
+    with main_col:
+        st.markdown(
+            f"""
+            <div class="domo-command-panel">
+                <span class="domo-workspace-label">Chat creativo</span>
+                <div class="domo-command-title">Habla con tu cerebro visual</div>
+                <p class="domo-widget-copy">Pide ideas, borra tarjetas, mejora hooks, convierte piezas y guarda proyectos sin llenar formularios.</p>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+        quick_prompts = [
+            "qué publico hoy",
+            "dame ideas de fotografía",
+            "quiero algo sobre lettering",
+            "convierte esto en carrusel",
+            "dame un Reel sobre cromática popular",
+            "qué contenido repito",
+        ]
+        chip_cols = st.columns(3)
+        for index, prompt in enumerate(quick_prompts):
+            with chip_cols[index % 3]:
+                if st.button(prompt, key=f"home_chip_{index}", use_container_width=True):
+                    st.session_state["home_pending_prompt"] = prompt
+                    st.rerun()
+
+        default_prompt = st.session_state.pop("home_pending_prompt", "")
+        st.markdown('<div class="domo-chat-input-wrap">', unsafe_allow_html=True)
+        prompt = st.text_area(
+            "Habla con DOMO",
+            value=default_prompt,
+            placeholder="Ej: me gusta esta idea pero hazla más fotográfica / borra la 3 / dame algo de branding con mockups",
+            height=110,
+            key="home_chat_prompt",
+        )
+        ask = st.button("Crear / responder", type="primary", key="home_chat_submit", use_container_width=True)
+        st.markdown("</div>", unsafe_allow_html=True)
+
+        if ask and prompt.strip():
+            if apply_home_command(prompt):
+                st.success("Listo. Ajusté las tarjetas.")
+                st.rerun()
+            if should_refine_existing_card(prompt) and refine_existing_home_card(prompt, posts):
+                st.success("Listo. Actualicé solo esa tarjeta.")
+                st.rerun()
+            with st.spinner("DOMO está pensando como estratega creativo..."):
+                try:
+                    answer = answer_as_domo_assistant(
+                        "Responde como estratega creativo de DOMO. Si el usuario pide ideas, devuelve JSON con una lista 'ideas' "
+                        "para que cada idea sea una tarjeta editable. Incluye: title, pillar, format, hook, share_save_mechanism, cta, "
+                        "strategic_reason, priority, linkedin_adaptation. Si pide una explicación o análisis, responde breve y accionable, "
+                        "sin sonar genérico. Territorios: dirección de arte, foto publicitaria, calle, diseño, branding, lettering, stencil, "
+                        "cromática, Ecuador, gráfica popular LATAM, workshops y collabs.\n\n"
+                        f"Pregunta DOMO: {prompt}",
+                        posts,
+                    )
+                except Exception:
+                    answer = (
+                        "Hoy conviene publicar una pieza con postura clara: toma un material real de marca o foto de calle, "
+                        "ponle una frase de criterio visual y cierra con una pregunta específica."
+                    )
+            new_cards = extract_cards_from_answer(answer, prompt)
+            st.session_state["home_live_cards"] = new_cards + st.session_state["home_live_cards"]
+            conn = get_connection()
+            add_assistant_note(conn, prompt, answer)
+            conn.close()
+            st.rerun()
+
+        cards = st.session_state.get("home_live_cards", [])
+        if cards:
+            st.markdown("### Tarjetas vivas")
+            card_cols = st.columns(2)
+            for index, card in enumerate(cards[:12]):
+                with card_cols[index % 2]:
+                    render_home_card(card, index, posts)
+        else:
+            st.markdown(
+                '<div class="domo-answer-grid">'
+                + os_widget("START", "Qué publico hoy", "01", "Pregunta y te devuelve tarjetas editables.", "lime", "lg")
+                + os_widget("ITERAR", "No regeneres todo", "↻", "Mejora solo una tarjeta, hook o CTA.", "cyan", "lg")
+                + "</div>",
+                unsafe_allow_html=True,
+            )
+
+    with side_col:
+        avg_share = safe_mean(posts, "share_rate")
+        avg_save = safe_mean(posts, "save_rate")
+        projects = build_live_projects(stored_ideas, carousels, inspirations, trends, collabs)
+        st.markdown(
+            f"""
+            <div class="domo-side-signal">
+                <span class="domo-workspace-label">Pulso</span>
+                <div class="domo-widget-title">Qué está pasando</div>
+                <p class="domo-widget-copy">{html.escape(str(reading["headline"]))}</p>
+                <div class="domo-os-pills">
+                    <span class="domo-os-pill">Shares {as_percent(avg_share)}</span>
+                    <span class="domo-os-pill">Saves {as_percent(avg_save)}</span>
+                    <span class="domo-os-pill">{len(projects)} proyectos</span>
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+        st.markdown("### Proyectos recientes")
+        for project in projects[:5]:
+            render_project_card(project, False)
+    st.markdown("</div>", unsafe_allow_html=True)
+
+
+def render_today_os(
+    posts: pd.DataFrame,
+    action_items: pd.DataFrame,
+    stored_ideas: pd.DataFrame,
+    carousels: pd.DataFrame,
+    inspirations: pd.DataFrame,
+    trends: pd.DataFrame,
+    collabs: pd.DataFrame,
+) -> None:
+    render_chat_home_os(posts, stored_ideas, carousels, inspirations, trends, collabs)
+
+
+def render_dashboard_cockpit(posts: pd.DataFrame, action_items: pd.DataFrame) -> None:
     reading = build_metric_reading(posts)
     avg_share = safe_mean(posts, "share_rate")
     avg_save = safe_mean(posts, "save_rate")
@@ -5375,14 +5895,14 @@ def main() -> None:
 
     nav_options = OS_PAGES
     nav_labels = {
-        "TODAY": "01 TODAY",
-        "CONTENT": "02 CONTENT",
-        "METRICS": "03 METRICS",
+        "TODAY": "01 CHAT",
+        "CONTENT": "02 WORKSPACE",
+        "METRICS": "03 PULSO",
     }
     nav_help = {
-        "TODAY": "Cockpit visual para decidir qué hacer ahora.",
-        "CONTENT": "Biblioteca visual de ideas, carruseles, links, trends y collabs.",
-        "METRICS": "Señales visuales: qué pegó, qué está débil y qué corregir.",
+        "TODAY": "Habla, crea tarjetas vivas y decide el siguiente movimiento.",
+        "CONTENT": "Workspace editable para ideas, carruseles, links, trends y collabs.",
+        "METRICS": "Pulso visual: qué pegó, qué está débil y qué corregir.",
     }
     if "page" not in st.session_state:
         st.session_state["page"] = "TODAY"
@@ -5425,11 +5945,9 @@ def main() -> None:
     st.sidebar.caption(nav_help.get(page, ""))
     render_sidebar_copilot(page, posts)
     render_os_nav(page)
-    if page != "CONTENT":
-        render_global_copilot(page, posts)
 
     if page == "TODAY":
-        render_today_os(posts, action_items)
+        render_today_os(posts, action_items, stored_ideas, carousels, inspirations, trends, collabs)
     elif page == "CONTENT":
         render_content_os(posts, stored_ideas, screenshots, inspirations, trends, collabs, carousels)
     elif page == "METRICS":
