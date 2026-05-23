@@ -2464,9 +2464,13 @@ def get_query_value(name: str, default: str = "") -> str:
     return str(value or default)
 
 
-def nav_url(page: str) -> str:
-    auth = "&domo_auth=ok" if st.session_state.get("authenticated") else ""
-    return f"?page={page}{auth}"
+def nav_url(page: str, tool: str = "") -> str:
+    params = [f"page={page}"]
+    if tool:
+        params.append(f"tool={tool}")
+    if st.session_state.get("authenticated"):
+        params.append("domo_auth=ok")
+    return "?" + "&".join(params)
 
 
 def require_login() -> bool:
@@ -4656,12 +4660,12 @@ def render_content_os(
 ) -> None:
     render_os_header("CONTENT", "Biblioteca visual: ideas, carruseles, inspiración, trends, collabs y drafts.", posts)
     counts = [
-        ("Ideas", len(stored_ideas), "Crear posts y Reels", nav_url("CONTENT"), "lime"),
-        ("Carruseles", len(carousels), "Slides listos para copiar", nav_url("CONTENT"), "paper"),
-        ("Inspiración", len(inspirations), "Links guardados", nav_url("CONTENT"), "cyan"),
-        ("Trends", len(trends), "Radar web", nav_url("CONTENT"), "orange"),
-        ("Collabs", len(collabs), "Marcas y pitch", nav_url("CONTENT"), "magenta"),
-        ("Capturas", len(posts), "Actualizar data", nav_url("CONTENT"), ""),
+        ("Ideas", len(stored_ideas), "Crear posts y Reels", nav_url("CONTENT", "Ideas"), "lime"),
+        ("Carruseles", len(carousels), "Slides listos para copiar", nav_url("CONTENT", "Carruseles"), "paper"),
+        ("Inspiración", len(inspirations), "Links guardados", nav_url("CONTENT", "Inspiración"), "cyan"),
+        ("Trends", len(trends), "Radar web", nav_url("CONTENT", "Trends"), "orange"),
+        ("Collabs", len(collabs), "Marcas y pitch", nav_url("CONTENT", "Collabs"), "magenta"),
+        ("Capturas", len(posts), "Actualizar data", nav_url("CONTENT", "Capturas"), ""),
     ]
     st.markdown(
         '<div class="domo-os-shell"><div class="domo-os-grid">'
@@ -4669,12 +4673,19 @@ def render_content_os(
         + "</div></div>",
         unsafe_allow_html=True,
     )
+    tools = ["Ideas", "Carruseles", "Inspiración", "Trends", "Collabs", "Capturas"]
+    query_tool = get_query_value("tool", "Ideas")
+    tool_index = tools.index(query_tool) if query_tool in tools else 0
+    if query_tool in tools and st.session_state.get("content_tool_selector") != query_tool:
+        st.session_state["content_tool_selector"] = query_tool
     section = st.radio(
         "Abrir herramienta",
-        ["Ideas", "Carruseles", "Inspiración", "Trends", "Collabs", "Capturas"],
-        index=0,
+        tools,
+        index=tool_index,
         horizontal=True,
+        key="content_tool_selector",
     )
+    st.query_params["tool"] = section
     if section == "Ideas":
         render_ideas(posts, stored_ideas)
     elif section == "Carruseles":
@@ -4785,7 +4796,6 @@ def main() -> None:
         st.query_params["domo_auth"] = "ok"
     st.sidebar.caption(nav_help.get(page, ""))
     render_sidebar_copilot(page, posts)
-    render_floating_copilot(page, posts)
     render_os_nav(page)
     render_global_copilot(page, posts)
 
