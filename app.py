@@ -2308,12 +2308,33 @@ def inject_styles() -> None:
             margin: 0 auto 26px;
         }}
         .domo-workspace-panel {{
-            min-height: 620px;
+            min-height: 0;
             padding: 18px;
             border-radius: 34px;
             background: rgba(10,14,11,.76);
             border: 1px solid rgba(243,247,234,.10);
             backdrop-filter: blur(18px);
+        }}
+        .domo-workspace-intro {{
+            margin: 0 0 14px;
+            padding: 18px;
+            border-radius: 28px;
+            background: linear-gradient(145deg, rgba(207,255,79,.13), rgba(246,250,239,.045));
+            border: 1px solid rgba(207,255,79,.18);
+        }}
+        .domo-workspace-intro h3 {{
+            margin: 10px 0 4px;
+            color: #F6FAEF !important;
+            font-size: 1.35rem;
+            line-height: 1;
+            font-weight: 950;
+        }}
+        .domo-workspace-empty {{
+            padding: 22px;
+            border-radius: 28px;
+            background: rgba(246,250,239,.07);
+            border: 1px dashed rgba(207,255,79,.35);
+            color: rgba(243,247,234,.72) !important;
         }}
         .domo-workspace-label {{
             display: inline-flex;
@@ -5251,30 +5272,59 @@ def render_live_workspace(
     st.markdown('<div class="domo-live-workspace">', unsafe_allow_html=True)
     left, center, right = st.columns([1.05, 2.15, 1.15], gap="medium")
     with left:
-        st.markdown('<div class="domo-workspace-panel">', unsafe_allow_html=True)
-        st.markdown('<span class="domo-workspace-label">Proyectos vivos</span>', unsafe_allow_html=True)
-        st.caption("Abre una pieza. Edita. Pídele al copiloto cambios puntuales.")
+        st.markdown(
+            """
+            <div class="domo-workspace-intro">
+                <span class="domo-workspace-label">Proyectos vivos</span>
+                <h3>Abre una pieza</h3>
+                <p class="domo-widget-copy">Ideas, reels, carruseles y collabs guardadas como objetos editables.</p>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
         if not projects:
-            st.info("Todavía no hay proyectos. Crea una idea o carrusel abajo.")
+            st.markdown(
+                '<div class="domo-workspace-empty">Todavía no hay proyectos. Vuelve a Chat, pide una idea y guárdala como proyecto.</div>',
+                unsafe_allow_html=True,
+            )
         for project in projects[:24]:
             render_project_card(project, project["key"] == active_key)
-        st.markdown("</div>", unsafe_allow_html=True)
     with center:
-        st.markdown('<div class="domo-workspace-panel">', unsafe_allow_html=True)
+        st.markdown(
+            """
+            <div class="domo-workspace-intro">
+                <span class="domo-workspace-label">Canvas editable</span>
+                <h3>Trabaja por bloques</h3>
+                <p class="domo-widget-copy">Edita hook, CTA, dirección visual, slides o notas sin regenerar todo.</p>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
         if active_project:
             render_project_canvas(active_project, posts)
         else:
-            st.markdown('<div class="domo-canvas-title">Crea tu primer proyecto vivo</div>', unsafe_allow_html=True)
-            st.write("Genera una idea o carrusel abajo. Luego se abrirá aquí como workspace editable.")
-        st.markdown("</div>", unsafe_allow_html=True)
+            st.markdown(
+                '<div class="domo-workspace-empty"><div class="domo-canvas-title">Crea tu primer proyecto vivo</div>Genera una idea desde Chat y guárdala.</div>',
+                unsafe_allow_html=True,
+            )
     with right:
-        st.markdown('<div class="domo-workspace-panel domo-copilot-side">', unsafe_allow_html=True)
+        st.markdown(
+            """
+            <div class="domo-workspace-intro">
+                <span class="domo-workspace-label">Copiloto de proyecto</span>
+                <h3>Cambia una parte</h3>
+                <p class="domo-widget-copy">Pídele: más calle, menos texto, slide 3 más fuerte o convertir a LinkedIn.</p>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
         if active_project:
             render_workspace_copilot(active_project, posts)
         else:
-            st.markdown("### Copiloto")
-            st.write("Cuando abras un proyecto, aquí podrás pedir mejoras por bloque.")
-        st.markdown("</div>", unsafe_allow_html=True)
+            st.markdown(
+                '<div class="domo-workspace-empty">Abre un proyecto para activar edición con IA por bloque.</div>',
+                unsafe_allow_html=True,
+            )
     st.markdown("</div>", unsafe_allow_html=True)
 
     with st.expander("Crear nuevo / herramientas de archivo"):
