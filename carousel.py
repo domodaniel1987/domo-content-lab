@@ -17,32 +17,44 @@ LOCAL_CAROUSEL = {
         {
             "number": 1,
             "text": "Pinterest no entiende tu barrio",
-            "note": "Portada bold, alto contraste, textura papel.",
+            "microcopy": "La referencia sirve solo si vuelve con acento propio.",
+            "visual": "Portada bold, alto contraste, textura papel.",
+            "note": "Abrir con postura fuerte y fácil de compartir.",
         },
         {
             "number": 2,
             "text": "Una referencia bonita no siempre tiene mundo",
-            "note": "Mostrar collage de referencia global vs calle local.",
+            "microcopy": "Si no conversa con tu calle, es decoración.",
+            "visual": "Collage de referencia global vs calle local.",
+            "note": "Instalar tensión entre estética y contexto.",
         },
         {
             "number": 3,
             "text": "Antes de copiar una estética, pregúntate: qué cultura sostiene esto?",
-            "note": "Slide educativo guardable.",
+            "microcopy": "Color, letra, material, historia: ahí está el sistema.",
+            "visual": "Slide educativo guardable con etiquetas y flechas.",
+            "note": "Dar criterio aplicable para saves.",
         },
         {
             "number": 4,
             "text": "Lo LATAM no es adorno: es sistema visual",
-            "note": "Meter rótulo, papel, sello, color popular.",
+            "microcopy": "Rótulo, papel, sello y color también son estrategia.",
+            "visual": "Rótulo, papel, sello, color popular.",
+            "note": "Reforzar posicionamiento visual LATAM.",
         },
         {
             "number": 5,
             "text": "El criterio está en traducir, no en decorar",
-            "note": "Frase central tipo manifiesto.",
+            "microcopy": "Una marca viva no copia: interpreta su territorio.",
+            "visual": "Frase central tipo manifiesto, mucho aire y grano.",
+            "note": "Slide de frase guardable.",
         },
         {
             "number": 6,
             "text": "Si tu marca pudiera hablar desde la calle, cómo sonaría?",
-            "note": "CTA visual para comentario.",
+            "microcopy": "Comenta una esquina, un rótulo o un color de tu barrio.",
+            "visual": "CTA visual con sticker, sello y pregunta grande.",
+            "note": "Cerrar con comentario de calidad.",
         },
     ],
 }
@@ -66,7 +78,11 @@ def build_carousel_prompt(seed: str, objective: str, posts: pd.DataFrame, inspir
             "Cada frase debe sonar a DOMO: criterio visual LATAM, editorial + calle, simple pero con filo.",
             "Debe servir para shares, saves, comentarios de calidad o leads.",
             "Incluir portada, tension, desarrollo, idea guardable y cierre con CTA.",
-            "Cada slide debe ser una imagen del carrusel con frase exacta, visual sugerido, microcopy y nota estrategica.",
+            "Cada slide debe ser una imagen del carrusel con texto grande exacto, texto pequeno exacto, visual sugerido y nota estrategica.",
+            "text = texto grande del post. Maximo 10 palabras, potente, listo para pegar en Illustrator.",
+            "microcopy = texto pequeno del post. Maximo 18 palabras, complementa la frase grande sin repetirla.",
+            "visual = direccion visual concreta: foto, color, textura, composición, sticker, sello o recurso.",
+            "caption = caption completo para Instagram. cta = llamada a accion final del carrusel.",
             "Entrega 6 a 8 slides.",
         ],
         "return_json_shape": {
@@ -96,9 +112,17 @@ def generate_carousel(seed: str, objective: str, posts: pd.DataFrame, inspiratio
                 "objective": objective,
                 "caption": answer,
                 "cta": "Comenta que parte te hizo mirar distinto.",
-                "slides": [{"number": 1, "text": answer[:180], "note": "Revisar y dividir en slides."}],
+                "slides": [
+                    {
+                        "number": 1,
+                        "text": answer[:90],
+                        "microcopy": "Revisar esta lectura y dividirla en piezas más cortas.",
+                        "visual": "Texto editorial sobre textura de papel.",
+                        "note": "Revisar y dividir en slides.",
+                    }
+                ],
             }
-    fallback = LOCAL_CAROUSEL.copy()
+    fallback = json.loads(json.dumps(LOCAL_CAROUSEL, ensure_ascii=False))
     fallback["objective"] = objective
     if seed:
         fallback["title"] = seed[:70]

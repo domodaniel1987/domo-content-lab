@@ -178,6 +178,68 @@ def inject_styles() -> None:
             text-align: right;
         }
         .domo-status strong { display: block; font-size: 2.2rem; color: var(--lime) !important; }
+        .domo-path {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 10px;
+            margin: -8px 0 22px;
+        }
+        .domo-path-card {
+            display: block;
+            min-height: 92px;
+            padding: 15px;
+            border-radius: 24px;
+            background: rgba(244,247,236,.065);
+            border: 1px solid rgba(244,247,236,.11);
+            text-decoration: none !important;
+            transition: transform .16s ease, border-color .16s ease, background .16s ease;
+        }
+        .domo-path-card:hover {
+            transform: translateY(-2px);
+            border-color: rgba(200,255,47,.42);
+            background: rgba(200,255,47,.10);
+        }
+        .domo-path-card.active {
+            background: var(--lime);
+            border-color: var(--lime);
+        }
+        .domo-path-card.active * { color: #07100d !important; }
+        .domo-path-card b {
+            display: block;
+            font-size: 1rem;
+            color: var(--text) !important;
+            margin-bottom: 4px;
+        }
+        .domo-path-card span {
+            display: block;
+            color: var(--muted) !important;
+            font-size: .82rem;
+            line-height: 1.25;
+        }
+        .domo-step-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 12px;
+            margin: 14px 0 22px;
+        }
+        .domo-step-card {
+            min-height: 128px;
+            padding: 16px;
+            border-radius: 26px;
+            background: rgba(244,247,236,.07);
+            border: 1px solid rgba(244,247,236,.11);
+        }
+        .domo-step-card strong {
+            display: block;
+            font-size: 1.15rem;
+            margin: 8px 0;
+            color: var(--text) !important;
+        }
+        .domo-step-card p {
+            color: var(--muted) !important;
+            margin: 0;
+            line-height: 1.35;
+        }
         .domo-shell {
             display: grid;
             grid-template-columns: minmax(0, 1.65fr) minmax(280px, .85fr);
@@ -302,6 +364,161 @@ def inject_styles() -> None:
             border: 1px solid rgba(200,255,47,.22);
             color: var(--text) !important;
         }
+        .domo-carousel-head {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(220px, .55fr);
+            gap: 14px;
+            margin: 22px 0 12px;
+        }
+        .domo-caption-box {
+            padding: 18px;
+            border-radius: 28px;
+            background: rgba(244,247,236,.075);
+            border: 1px solid var(--line);
+        }
+        .domo-slide-card {
+            display: grid;
+            grid-template-columns: minmax(240px, .78fr) minmax(0, 1fr);
+            gap: 18px;
+            padding: 16px;
+            margin: 12px 0;
+            border-radius: 30px;
+            background: linear-gradient(145deg, rgba(244,247,236,.085), rgba(244,247,236,.035));
+            border: 1px solid rgba(244,247,236,.13);
+        }
+        .domo-post-preview {
+            min-height: 360px;
+            aspect-ratio: 4 / 5;
+            border-radius: 28px;
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            border: 1px solid rgba(244,247,236,.18);
+            background:
+                radial-gradient(circle at 18% 14%, rgba(200,255,47,.55), transparent 19%),
+                linear-gradient(145deg, #101410, #050706 58%, #20251f);
+        }
+        .domo-post-preview:before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            opacity: .18;
+            background-image:
+                repeating-linear-gradient(135deg, rgba(244,247,236,.22) 0 1px, transparent 1px 12px);
+            pointer-events: none;
+        }
+        .domo-post-preview.street {
+            background:
+                radial-gradient(circle at 78% 18%, rgba(255,103,216,.35), transparent 24%),
+                linear-gradient(145deg, #0b0e0d, #26301f 52%, #090a09);
+        }
+        .domo-post-preview.paper {
+            background:
+                radial-gradient(circle at 12% 18%, rgba(255,184,77,.42), transparent 26%),
+                linear-gradient(145deg, #efead5, #b6c0a2 52%, #101410);
+        }
+        .domo-post-preview.photo {
+            background:
+                radial-gradient(circle at 70% 20%, rgba(103,232,249,.34), transparent 26%),
+                linear-gradient(145deg, #050706, #18242b 52%, #101410);
+        }
+        .domo-post-preview.mockup {
+            background:
+                radial-gradient(circle at 74% 18%, rgba(255,90,90,.38), transparent 24%),
+                linear-gradient(145deg, #111111, #2a2118 54%, #050706);
+        }
+        .domo-post-top {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+        }
+        .domo-slide-number {
+            width: 58px;
+            height: 58px;
+            border-radius: 20px;
+            display: grid;
+            place-items: center;
+            background: var(--lime);
+            color: #07100d !important;
+            font-weight: 950;
+            font-size: 1.35rem;
+        }
+        .domo-post-brand {
+            color: var(--text) !important;
+            font-weight: 950;
+            font-size: .8rem;
+            letter-spacing: .04em;
+        }
+        .domo-post-copy {
+            position: relative;
+            z-index: 1;
+        }
+        .domo-slide-label {
+            display: inline-flex;
+            padding: 5px 9px;
+            border-radius: 999px;
+            background: rgba(200,255,47,.12);
+            color: var(--lime) !important;
+            font-size: .72rem;
+            font-weight: 950;
+            text-transform: uppercase;
+            margin-bottom: 7px;
+        }
+        .domo-slide-big {
+            font-size: clamp(1.55rem, 3.5vw, 3.4rem);
+            line-height: .98;
+            font-weight: 950;
+            color: var(--text) !important;
+            margin: 0 0 12px;
+        }
+        .domo-post-preview.paper .domo-slide-big,
+        .domo-post-preview.paper .domo-slide-small,
+        .domo-post-preview.paper .domo-post-brand {
+            color: #07100d !important;
+        }
+        .domo-post-preview.paper .domo-slide-label {
+            color: #07100d !important;
+            background: rgba(7,16,13,.13);
+        }
+        .domo-slide-small {
+            font-size: 1.02rem;
+            line-height: 1.35;
+            color: rgba(244,247,236,.78) !important;
+            margin: 0;
+        }
+        .domo-slide-detail {
+            padding: 4px 0;
+            align-self: center;
+            width: 100%;
+        }
+        .domo-visual-pills {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin: 10px 0 12px;
+        }
+        .domo-visual-pill {
+            padding: 8px 10px;
+            border-radius: 999px;
+            background: rgba(244,247,236,.10);
+            border: 1px solid rgba(244,247,236,.12);
+            color: rgba(244,247,236,.82) !important;
+            font-size: .78rem;
+            font-weight: 850;
+        }
+        .domo-slide-visual {
+            margin-top: 12px;
+            padding: 12px;
+            border-radius: 18px;
+            background: rgba(5,7,6,.42);
+            color: rgba(244,247,236,.72) !important;
+        }
         .domo-bottom-nav {
             position: fixed;
             left: 50%;
@@ -343,6 +560,13 @@ def inject_styles() -> None:
             .domo-status { text-align: left; margin-top: 12px; }
             .domo-shell { grid-template-columns: 1fr; }
             .domo-grid { grid-template-columns: 1fr; }
+            .domo-path { grid-template-columns: 1fr; margin-top: 0; }
+            .domo-path-card { min-height: auto; padding: 13px 14px; }
+            .domo-step-grid { grid-template-columns: 1fr; }
+            .domo-step-card { min-height: auto; }
+            .domo-carousel-head { grid-template-columns: 1fr; }
+            .domo-slide-card { grid-template-columns: 1fr; }
+            .domo-post-preview { min-height: 320px; }
             .domo-card-title { max-width: 100%; }
             [data-testid="stSidebar"] { display: none; }
             .domo-bottom-nav { width: calc(100% - 22px); justify-content: space-between; }
@@ -360,7 +584,7 @@ def nav_url(page: str) -> str:
 
 
 def bottom_nav(current: str) -> None:
-    items = [("home", "Hoy"), ("create", "Crear"), ("learn", "Aprender")]
+    items = [("home", "Hoy"), ("create", "Crear"), ("learn", "Métricas")]
     links = []
     for key, label in items:
         active = "active" if key == current else ""
@@ -370,11 +594,11 @@ def bottom_nav(current: str) -> None:
 
 def sidebar_status(data: dict[str, pd.DataFrame]) -> None:
     st.sidebar.markdown("### DOMO Content Lab")
-    st.sidebar.caption("Simple: preguntar, crear, guardar, aprender.")
+    st.sidebar.caption("Flujo simple: Hoy → Crear → Métricas.")
     st.sidebar.write("IA:", "activa" if has_ai_key() else "modo local")
     st.sidebar.write("Memoria:", cache_store.get_database_mode())
     st.sidebar.divider()
-    st.sidebar.caption("Si algo no ayuda a crear mejor contenido, aquí debe desaparecer.")
+    st.sidebar.caption("En celular usa la barra inferior. En desktop usa las tarjetas superiores.")
 
 
 def header(title: str, subtitle: str, data: dict[str, pd.DataFrame]) -> None:
@@ -396,6 +620,41 @@ def header(title: str, subtitle: str, data: dict[str, pd.DataFrame]) -> None:
         """,
         unsafe_allow_html=True,
     )
+
+
+def path_nav(current: str) -> None:
+    items = [
+        ("home", "01 Hoy", "Pregunta qué publicar y guarda ideas."),
+        ("create", "02 Crear", "Convierte ideas en carruseles y links útiles."),
+        ("learn", "03 Métricas", "Mira qué pegó, qué repetir y qué corregir."),
+    ]
+    cards = []
+    for key, title, subtitle in items:
+        active = "active" if key == current else ""
+        cards.append(
+            f"""
+            <a class="domo-path-card {active}" href="{nav_url(key)}" target="_self">
+                <b>{html.escape(title)}</b>
+                <span>{html.escape(subtitle)}</span>
+            </a>
+            """
+        )
+    st.markdown(f'<nav class="domo-path">{"".join(cards)}</nav>', unsafe_allow_html=True)
+
+
+def action_guide(items: list[tuple[str, str, str]]) -> None:
+    cards = []
+    for label, title, copy in items:
+        cards.append(
+            f"""
+            <article class="domo-step-card">
+                <span class="domo-kicker">{html.escape(label)}</span>
+                <strong>{html.escape(title)}</strong>
+                <p>{html.escape(copy)}</p>
+            </article>
+            """
+        )
+    st.markdown(f'<section class="domo-step-grid">{"".join(cards)}</section>', unsafe_allow_html=True)
 
 
 def metric_reading(posts: pd.DataFrame) -> dict[str, str]:
@@ -538,6 +797,119 @@ def delete_idea(item_id: int) -> None:
     conn.close()
 
 
+def infer_slide_microcopy(text: str, visual: str, number: int) -> str:
+    source = f"{text} {visual}".lower()
+    if "pinterest" in source:
+        return "La referencia sirve solo si vuelve con acento propio."
+    if "mockup" in source:
+        return "Muéstralo viviendo en contexto, no flotando en una maqueta perfecta."
+    if "foto" in source or "fotograf" in source:
+        return "La imagen debe vender criterio, no solo verse bonita."
+    if "calle" in source or "barrio" in source or "cuenca" in source:
+        return "La calle también es archivo, sistema y estrategia visual."
+    if number == 1:
+        return "Una postura clara para abrir conversación y guardar."
+    if number >= 6:
+        return "Cierra con una pregunta que invite a responder con criterio."
+    return "Convierte la idea en una señal visual fácil de recordar."
+
+
+def normalize_carousel_slides(slides: list[dict]) -> tuple[list[dict], bool]:
+    normalized: list[dict] = []
+    changed = False
+    for index, raw in enumerate(slides, start=1):
+        if not isinstance(raw, dict):
+            changed = True
+            continue
+        number = int(raw.get("number") or index)
+        text = clean_text(raw.get("text"), clean_text(raw.get("title"), f"Slide {number}"))
+        visual = clean_text(raw.get("visual"), clean_text(raw.get("note"), "Dirección visual pendiente."))
+        microcopy = clean_text(
+            raw.get("microcopy"),
+            clean_text(raw.get("small_text"), clean_text(raw.get("subtitle"), clean_text(raw.get("support_text"), ""))),
+        )
+        if not microcopy:
+            microcopy = infer_slide_microcopy(text, visual, number)
+            changed = True
+        item = dict(raw)
+        item.update({"number": number, "text": text, "microcopy": microcopy, "visual": visual})
+        normalized.append(item)
+        if item != raw:
+            changed = True
+    return normalized, changed
+
+
+def maybe_backfill_carousel(row: pd.Series, slides: list[dict]) -> None:
+    try:
+        item_id = int(row.get("id"))
+    except Exception:
+        return
+    conn = cache_store.get_connection()
+    cache_store.update_row(
+        conn,
+        "carousel_drafts",
+        item_id,
+        {"slides_json": json.dumps(slides, ensure_ascii=False, indent=2)},
+    )
+    conn.close()
+
+
+def visual_background_class(visual: str, text: str) -> str:
+    source = f"{visual} {text}".lower()
+    if any(word in source for word in ["mockup", "marca", "branding", "logo"]):
+        return "mockup"
+    if any(word in source for word in ["foto", "fotograf", "retrato", "shot", "luz"]):
+        return "photo"
+    if any(word in source for word in ["papel", "grano", "risograph", "editorial", "textura"]):
+        return "paper"
+    if any(word in source for word in ["calle", "barrio", "rotulo", "cuenca", "latam", "popular"]):
+        return "street"
+    return ""
+
+
+def visual_pills(visual: str) -> list[str]:
+    visual_clean = clean_text(visual, "Fondo visual por definir")
+    parts = re.split(r"[,.;/]+|\s+y\s+", visual_clean)
+    pills = [part.strip().capitalize() for part in parts if len(part.strip()) > 2]
+    return pills[:5] or [visual_clean]
+
+
+def render_carousel_slide(slide: dict) -> None:
+    number = int(slide.get("number") or 1)
+    text = clean_text(slide.get("text"), "")
+    microcopy = clean_text(slide.get("microcopy"), "")
+    visual = clean_text(slide.get("visual") or slide.get("note"), "")
+    bg_class = visual_background_class(visual, text)
+    pills = "".join(f'<span class="domo-visual-pill">{html.escape(pill)}</span>' for pill in visual_pills(visual))
+    st.markdown(
+        f"""
+        <article class="domo-slide-card">
+            <div class="domo-post-preview {bg_class}">
+                <div class="domo-post-top">
+                    <div class="domo-slide-number">{number:02d}</div>
+                    <span class="domo-post-brand">DOMO</span>
+                </div>
+                <div class="domo-post-copy">
+                    <span class="domo-slide-label">Texto grande</span>
+                    <p class="domo-slide-big">{html.escape(text)}</p>
+                    <span class="domo-slide-label">Texto pequeño</span>
+                    <p class="domo-slide-small">{html.escape(microcopy)}</p>
+                </div>
+            </div>
+            <div class="domo-slide-detail">
+                <span class="domo-slide-label">Imagen / fondo ideal</span>
+                <div class="domo-visual-pills">{pills}</div>
+                <div class="domo-slide-visual">{html.escape(visual)}</div>
+            </div>
+        </article>
+        """,
+        unsafe_allow_html=True,
+    )
+    copy_text = f"{text}\n{microcopy}".strip()
+    with st.expander("Copiar texto de este slide"):
+        st.code(copy_text, language=None)
+
+
 def card_markup(card: dict, signal: str = "") -> None:
     cls = {"Alta": "domo-cyan", "Media": "domo-orange", "Baja": "domo-pink"}.get(clean_text(card.get("priority")), "")
     st.markdown(
@@ -602,6 +974,14 @@ def render_home(data: dict[str, pd.DataFrame]) -> None:
     posts = data["posts"]
     reading = metric_reading(posts)
     header("Qué hago hoy", "Abre la app, pregunta en lenguaje normal y convierte respuestas en piezas guardables.", data)
+    path_nav("home")
+    action_guide(
+        [
+            ("Paso 1", "Pregunta normal", "Escribe lo que tienes: fotos, mockups, marca, lettering o una duda concreta."),
+            ("Paso 2", "Elige una tarjeta", "Guarda la mejor idea o conviértela directo en carrusel o LinkedIn."),
+            ("Paso 3", "Revisa señal", "Usa la lectura rápida para decidir si necesitas shares, saves o comentarios."),
+        ]
+    )
     left, right = st.columns([1.55, .9], gap="medium")
     with left:
         st.markdown(
@@ -673,8 +1053,16 @@ def render_create(data: dict[str, pd.DataFrame]) -> None:
     ideas = data["ideas"]
     inspirations = data["inspirations"]
     header("Crear", "Todo lo guardado se puede editar, borrar o convertir. Sin formularios largos.", data)
+    path_nav("create")
+    action_guide(
+        [
+            ("Ideas", "Ordena lo guardado", "Edita, duplica, borra o convierte una idea en carrusel."),
+            ("Carruseles", "Diseña slide por slide", "Cada slide tiene texto grande, texto pequeño, fondo ideal y copy para pegar."),
+            ("Links", "Alimenta el sistema", "Pega referencias útiles para traducirlas al lenguaje visual DOMO."),
+        ]
+    )
 
-    tab_ideas, tab_carousel, tab_links = st.tabs(["Ideas guardadas", "Carruseles", "Links útiles"])
+    tab_ideas, tab_carousel, tab_links = st.tabs(["Ideas", "Carruseles", "Links"])
     with tab_ideas:
         if ideas.empty:
             st.markdown('<div class="domo-note">Aún no hay ideas guardadas. Ve a Hoy, pregunta algo y guarda una tarjeta.</div>', unsafe_allow_html=True)
@@ -733,15 +1121,38 @@ def render_create(data: dict[str, pd.DataFrame]) -> None:
             st.rerun()
         carousels = data["carousels"]
         for _, row in carousels.iterrows():
-            st.markdown(f"### {clean_text(row.get('title'), 'Carrusel DOMO')}")
+            title = clean_text(row.get("title"), "Carrusel DOMO")
+            caption = clean_text(row.get("caption"), "")
+            cta = clean_text(row.get("cta"), "")
+            objective_saved = clean_text(row.get("objective"), "saves")
+            st.markdown(
+                f"""
+                <section class="domo-carousel-head">
+                    <div class="domo-caption-box">
+                        <span class="domo-kicker">Carrusel / {html.escape(objective_saved)}</span>
+                        <h2>{html.escape(title)}</h2>
+                    </div>
+                    <div class="domo-caption-box">
+                        <span class="domo-slide-label">Caption</span>
+                        <p class="domo-sub">{html.escape(caption or "Caption pendiente.")}</p>
+                        <span class="domo-slide-label">CTA</span>
+                        <p class="domo-sub">{html.escape(cta or "CTA pendiente.")}</p>
+                    </div>
+                </section>
+                """,
+                unsafe_allow_html=True,
+            )
             try:
                 slides = json.loads(row.get("slides_json") or "[]")
             except Exception:
                 slides = []
-            for slide in slides:
-                text = clean_text(slide.get("text"), "")
-                st.code(text, language=None)
-                st.caption(clean_text(slide.get("note") or slide.get("visual"), ""))
+            normalized_slides, changed = normalize_carousel_slides(slides)
+            if changed and normalized_slides:
+                maybe_backfill_carousel(row, normalized_slides)
+            for slide in normalized_slides:
+                render_carousel_slide(slide)
+            with st.expander("Copiar caption + CTA"):
+                st.code(f"{caption}\n\n{cta}".strip(), language=None)
     with tab_links:
         url = st.text_input("Pega un link que te parece chévere")
         notes = st.text_area("Qué te llamó la atención", height=80)
@@ -775,7 +1186,15 @@ def render_create(data: dict[str, pd.DataFrame]) -> None:
 
 def render_learn(data: dict[str, pd.DataFrame]) -> None:
     posts = data["posts"]
-    header("Aprender", "Qué pegó, qué no, qué repetir y qué corregir. Sin tablas eternas.", data)
+    header("Métricas", "Qué pegó, qué no, qué repetir y qué corregir. Sin tablas eternas.", data)
+    path_nav("learn")
+    action_guide(
+        [
+            ("Detectar", "Mira la métrica débil", "Si shares o saves están bajos, la app te dice qué ajustar."),
+            ("Repetir", "Encuentra señales fuertes", "No copies el post: repite el criterio con otro ejemplo visual."),
+            ("Corregir", "Decide el próximo formato", "Usa la lectura para elegir Reel, carrusel o LinkedIn."),
+        ]
+    )
     reading = metric_reading(posts)
     st.markdown(
         f"""
