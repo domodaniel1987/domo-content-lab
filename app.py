@@ -10,6 +10,7 @@ from pathlib import Path
 import pandas as pd
 import plotly.express as px
 import streamlit as st
+import streamlit.components.v1 as components
 
 import cache as cache_store
 from assistant import analyze_link_for_domo, answer_as_domo_assistant, has_ai_key
@@ -378,19 +379,21 @@ def inject_styles() -> None:
         }
         .domo-slide-card {
             display: grid;
-            grid-template-columns: minmax(240px, .78fr) minmax(0, 1fr);
-            gap: 18px;
-            padding: 16px;
+            grid-template-columns: minmax(190px, 270px) minmax(0, 1fr);
+            gap: 14px;
+            padding: 14px;
             margin: 12px 0;
-            border-radius: 30px;
+            border-radius: 26px;
             background: linear-gradient(145deg, rgba(244,247,236,.085), rgba(244,247,236,.035));
             border: 1px solid rgba(244,247,236,.13);
         }
         .domo-post-preview {
-            min-height: 360px;
+            width: 100%;
+            max-width: 270px;
+            min-height: 300px;
             aspect-ratio: 4 / 5;
-            border-radius: 28px;
-            padding: 20px;
+            border-radius: 24px;
+            padding: 16px;
             position: relative;
             overflow: hidden;
             display: flex;
@@ -439,15 +442,15 @@ def inject_styles() -> None:
             gap: 10px;
         }
         .domo-slide-number {
-            width: 58px;
-            height: 58px;
-            border-radius: 20px;
+            width: 46px;
+            height: 46px;
+            border-radius: 16px;
             display: grid;
             place-items: center;
             background: var(--lime);
             color: #07100d !important;
             font-weight: 950;
-            font-size: 1.35rem;
+            font-size: 1rem;
         }
         .domo-post-brand {
             color: var(--text) !important;
@@ -471,7 +474,7 @@ def inject_styles() -> None:
             margin-bottom: 7px;
         }
         .domo-slide-big {
-            font-size: clamp(1.55rem, 3.5vw, 3.4rem);
+            font-size: clamp(1.25rem, 2.2vw, 2.2rem);
             line-height: .98;
             font-weight: 950;
             color: var(--text) !important;
@@ -487,7 +490,7 @@ def inject_styles() -> None:
             background: rgba(7,16,13,.13);
         }
         .domo-slide-small {
-            font-size: 1.02rem;
+            font-size: .9rem;
             line-height: 1.35;
             color: rgba(244,247,236,.78) !important;
             margin: 0;
@@ -554,6 +557,29 @@ def inject_styles() -> None:
         .domo-cyan { --signal: var(--cyan); }
         .domo-pink { --signal: var(--pink); }
         .domo-orange { --signal: var(--orange); }
+        div[data-testid="stTabs"] [data-baseweb="tab-list"] {
+            gap: 10px;
+            padding: 8px;
+            margin: 8px 0 18px;
+            border-radius: 999px;
+            background: rgba(244,247,236,.07);
+            border: 1px solid rgba(244,247,236,.12);
+        }
+        div[data-testid="stTabs"] button[role="tab"] {
+            min-height: 52px;
+            padding: 0 22px;
+            border-radius: 999px;
+            color: rgba(244,247,236,.78) !important;
+            font-weight: 950;
+            letter-spacing: .01em;
+        }
+        div[data-testid="stTabs"] button[role="tab"][aria-selected="true"] {
+            background: var(--lime) !important;
+            color: #07100d !important;
+        }
+        div[data-testid="stTabs"] button[role="tab"][aria-selected="true"] * {
+            color: #07100d !important;
+        }
         @media (max-width: 860px) {
             .block-container { padding: 1rem .85rem 6rem; }
             .domo-top { display: block; }
@@ -566,7 +592,7 @@ def inject_styles() -> None:
             .domo-step-card { min-height: auto; }
             .domo-carousel-head { grid-template-columns: 1fr; }
             .domo-slide-card { grid-template-columns: 1fr; }
-            .domo-post-preview { min-height: 320px; }
+            .domo-post-preview { max-width: 100%; min-height: 300px; }
             .domo-card-title { max-width: 100%; }
             [data-testid="stSidebar"] { display: none; }
             .domo-bottom-nav { width: calc(100% - 22px); justify-content: space-between; }
@@ -632,12 +658,8 @@ def path_nav(current: str) -> None:
     for key, title, subtitle in items:
         active = "active" if key == current else ""
         cards.append(
-            f"""
-            <a class="domo-path-card {active}" href="{nav_url(key)}" target="_self">
-                <b>{html.escape(title)}</b>
-                <span>{html.escape(subtitle)}</span>
-            </a>
-            """
+            f'<a class="domo-path-card {active}" href="{nav_url(key)}" target="_self">'
+            f'<b>{html.escape(title)}</b><span>{html.escape(subtitle)}</span></a>'
         )
     st.markdown(f'<nav class="domo-path">{"".join(cards)}</nav>', unsafe_allow_html=True)
 
@@ -646,13 +668,8 @@ def action_guide(items: list[tuple[str, str, str]]) -> None:
     cards = []
     for label, title, copy in items:
         cards.append(
-            f"""
-            <article class="domo-step-card">
-                <span class="domo-kicker">{html.escape(label)}</span>
-                <strong>{html.escape(title)}</strong>
-                <p>{html.escape(copy)}</p>
-            </article>
-            """
+            f'<article class="domo-step-card"><span class="domo-kicker">{html.escape(label)}</span>'
+            f'<strong>{html.escape(title)}</strong><p>{html.escape(copy)}</p></article>'
         )
     st.markdown(f'<section class="domo-step-grid">{"".join(cards)}</section>', unsafe_allow_html=True)
 
@@ -797,6 +814,76 @@ def delete_idea(item_id: int) -> None:
     conn.close()
 
 
+def update_carousel(item_id: int, values: dict) -> None:
+    conn = cache_store.get_connection()
+    cache_store.update_row(conn, "carousel_drafts", item_id, values)
+    conn.close()
+
+
+def delete_carousel(item_id: int) -> None:
+    conn = cache_store.get_connection()
+    cache_store.delete_row(conn, "carousel_drafts", item_id)
+    conn.close()
+
+
+def save_carousel_slides(item_id: int, slides: list[dict]) -> None:
+    update_carousel(item_id, {"slides_json": json.dumps(renumber_slides(slides), ensure_ascii=False, indent=2)})
+
+
+def renumber_slides(slides: list[dict]) -> list[dict]:
+    renumbered = []
+    for index, slide in enumerate(slides, start=1):
+        item = dict(slide)
+        item["number"] = index
+        renumbered.append(item)
+    return renumbered
+
+
+def copy_button(label: str, text: str, key: str) -> None:
+    safe_key = re.sub(r"[^a-zA-Z0-9_-]+", "-", key)
+    payload = json.dumps(text or "", ensure_ascii=False)
+    safe_label = html.escape(label)
+    components.html(
+        f"""
+        <button id="copy-{safe_key}" class="domo-copy-button">{safe_label}</button>
+        <script>
+        const btn = document.getElementById("copy-{safe_key}");
+        btn.addEventListener("click", async () => {{
+            try {{
+                await navigator.clipboard.writeText({payload});
+                const old = btn.textContent;
+                btn.textContent = "Copiado";
+                btn.classList.add("done");
+                setTimeout(() => {{
+                    btn.textContent = old;
+                    btn.classList.remove("done");
+                }}, 1200);
+            }} catch (err) {{
+                btn.textContent = "No se pudo copiar";
+            }}
+        }});
+        </script>
+        <style>
+        body {{ margin: 0; background: transparent; }}
+        .domo-copy-button {{
+            width: 100%;
+            min-height: 46px;
+            border: 1px solid rgba(244,247,236,.16);
+            border-radius: 999px;
+            background: rgba(244,247,236,.08);
+            color: #f4f7ec;
+            font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            font-weight: 900;
+            cursor: pointer;
+        }}
+        .domo-copy-button:hover {{ background: rgba(200,255,47,.15); border-color: rgba(200,255,47,.38); }}
+        .domo-copy-button.done {{ background: #c8ff2f; color: #07100d; border-color: #c8ff2f; }}
+        </style>
+        """,
+        height=52,
+    )
+
+
 def infer_slide_microcopy(text: str, visual: str, number: int) -> str:
     source = f"{text} {visual}".lower()
     if "pinterest" in source:
@@ -874,13 +961,54 @@ def visual_pills(visual: str) -> list[str]:
     return pills[:5] or [visual_clean]
 
 
+def visual_brief(visual: str, text: str) -> list[tuple[str, str]]:
+    source = f"{visual} {text}".lower()
+    if any(word in source for word in ["mockup", "branding", "marca", "logo"]):
+        return [
+            ("Fondo", "mockup real sobre muro, vitrina o mesa de trabajo"),
+            ("Mood", "editorial callejero, premium pero con textura"),
+            ("Detalle", "sello DOMO, sticker lime y sombra dura"),
+            ("Paleta", "negro, lima, rojo quemado y papel crudo"),
+        ]
+    if any(word in source for word in ["foto", "fotograf", "retrato", "shot", "luz"]):
+        return [
+            ("Fondo", "foto publicitaria con luz lateral y grano fino"),
+            ("Mood", "alto contraste, encuadre cerrado, gesto humano"),
+            ("Detalle", "recorte editorial, label pequeño y borde imperfecto"),
+            ("Paleta", "grafito, lima, cyan frío y piel natural"),
+        ]
+    if any(word in source for word in ["calle", "barrio", "cuenca", "latam", "popular", "rotulo"]):
+        return [
+            ("Fondo", "pared de Cuenca, rótulo popular o textura de pintura"),
+            ("Mood", "archivo visual LATAM, directo y con orgullo local"),
+            ("Detalle", "flecha pintada, sticker, sello rojo o marca de registro"),
+            ("Paleta", "verde lima, rojo popular, azul rótulo y negro"),
+        ]
+    if any(word in source for word in ["papel", "grano", "risograph", "editorial", "textura"]):
+        return [
+            ("Fondo", "papel escaneado, grano risograph y borde manual"),
+            ("Mood", "editorial experimental, simple y coleccionable"),
+            ("Detalle", "numeración grande, sello, etiqueta adhesiva"),
+            ("Paleta", "papel viejo, negro, naranja y lima"),
+        ]
+    return [
+        ("Fondo", "textura real, no fondo plano genérico"),
+        ("Mood", "bold, popular, editorial y calle"),
+        ("Detalle", "sticker, sello DOMO, grano y contraste fuerte"),
+        ("Paleta", "negro, lima, blanco sucio y un acento caliente"),
+    ]
+
+
 def render_carousel_slide(slide: dict) -> None:
     number = int(slide.get("number") or 1)
     text = clean_text(slide.get("text"), "")
     microcopy = clean_text(slide.get("microcopy"), "")
     visual = clean_text(slide.get("visual") or slide.get("note"), "")
     bg_class = visual_background_class(visual, text)
-    pills = "".join(f'<span class="domo-visual-pill">{html.escape(pill)}</span>' for pill in visual_pills(visual))
+    pills = "".join(
+        f'<span class="domo-visual-pill">{html.escape(label)}: {html.escape(value)}</span>'
+        for label, value in visual_brief(visual, text)
+    )
     st.markdown(
         f"""
         <article class="domo-slide-card">
@@ -905,9 +1033,6 @@ def render_carousel_slide(slide: dict) -> None:
         """,
         unsafe_allow_html=True,
     )
-    copy_text = f"{text}\n{microcopy}".strip()
-    with st.expander("Copiar texto de este slide"):
-        st.code(copy_text, language=None)
 
 
 def card_markup(card: dict, signal: str = "") -> None:
@@ -1120,7 +1245,13 @@ def render_create(data: dict[str, pd.DataFrame]) -> None:
             st.success("Carrusel guardado.")
             st.rerun()
         carousels = data["carousels"]
+        if carousels.empty:
+            st.markdown(
+                '<div class="domo-note">Aún no hay carruseles guardados. Escribe una idea arriba y crea el primero.</div>',
+                unsafe_allow_html=True,
+            )
         for _, row in carousels.iterrows():
+            carousel_id = int(row["id"])
             title = clean_text(row.get("title"), "Carrusel DOMO")
             caption = clean_text(row.get("caption"), "")
             cta = clean_text(row.get("cta"), "")
@@ -1142,6 +1273,37 @@ def render_create(data: dict[str, pd.DataFrame]) -> None:
                 """,
                 unsafe_allow_html=True,
             )
+            top_cols = st.columns([1, 1, 1])
+            with top_cols[0]:
+                copy_button("Copiar caption + CTA", f"{caption}\n\n{cta}".strip(), f"caption_{carousel_id}")
+            if top_cols[1].button("Editar portada/caption", key=f"edit_caption_toggle_{carousel_id}", use_container_width=True):
+                st.session_state[f"edit_carousel_{carousel_id}"] = not st.session_state.get(f"edit_carousel_{carousel_id}", False)
+            if top_cols[2].button("Borrar carrusel", key=f"delete_carousel_{carousel_id}", use_container_width=True):
+                delete_carousel(carousel_id)
+                st.success("Carrusel borrado.")
+                st.rerun()
+
+            if st.session_state.get(f"edit_carousel_{carousel_id}", False):
+                with st.expander("Editar portada, caption y CTA", expanded=True):
+                    new_title = st.text_input("Título", value=title, key=f"carousel_title_{carousel_id}")
+                    new_caption = st.text_area("Caption", value=caption, key=f"carousel_caption_{carousel_id}", height=120)
+                    new_cta = st.text_area("CTA", value=cta, key=f"carousel_cta_{carousel_id}", height=80)
+                    new_objective = st.selectbox(
+                        "Objetivo",
+                        ["saves", "shares", "comentarios", "leads"],
+                        index=["saves", "shares", "comentarios", "leads"].index(objective_saved)
+                        if objective_saved in ["saves", "shares", "comentarios", "leads"]
+                        else 0,
+                        key=f"carousel_objective_{carousel_id}",
+                    )
+                    if st.button("Guardar portada/caption", key=f"save_carousel_{carousel_id}", type="primary"):
+                        update_carousel(
+                            carousel_id,
+                            {"title": new_title, "caption": new_caption, "cta": new_cta, "objective": new_objective},
+                        )
+                        st.success("Carrusel actualizado.")
+                        st.rerun()
+
             try:
                 slides = json.loads(row.get("slides_json") or "[]")
             except Exception:
@@ -1149,10 +1311,64 @@ def render_create(data: dict[str, pd.DataFrame]) -> None:
             normalized_slides, changed = normalize_carousel_slides(slides)
             if changed and normalized_slides:
                 maybe_backfill_carousel(row, normalized_slides)
-            for slide in normalized_slides:
+            for slide_index, slide in enumerate(normalized_slides):
                 render_carousel_slide(slide)
-            with st.expander("Copiar caption + CTA"):
-                st.code(f"{caption}\n\n{cta}".strip(), language=None)
+                slide_number = int(slide.get("number") or slide_index + 1)
+                slide_text = clean_text(slide.get("text"), "")
+                slide_microcopy = clean_text(slide.get("microcopy"), "")
+                slide_visual = clean_text(slide.get("visual"), "")
+                action_cols = st.columns([1, 1])
+                with action_cols[0]:
+                    copy_button(
+                        f"Copiar slide {slide_number:02d}",
+                        f"{slide_text}\n{slide_microcopy}".strip(),
+                        f"slide_{carousel_id}_{slide_index}",
+                    )
+                if action_cols[1].button(
+                    f"Editar slide {slide_number:02d}",
+                    key=f"edit_slide_toggle_{carousel_id}_{slide_index}",
+                    use_container_width=True,
+                ):
+                    edit_key = f"edit_slide_{carousel_id}_{slide_index}"
+                    st.session_state[edit_key] = not st.session_state.get(edit_key, False)
+
+                if st.session_state.get(f"edit_slide_{carousel_id}_{slide_index}", False):
+                    with st.expander(f"Editar contenido del slide {slide_number:02d}", expanded=True):
+                        new_big = st.text_area(
+                            "Texto grande",
+                            value=slide_text,
+                            key=f"slide_big_{carousel_id}_{slide_index}",
+                            height=90,
+                        )
+                        new_small = st.text_area(
+                            "Texto pequeño",
+                            value=slide_microcopy,
+                            key=f"slide_small_{carousel_id}_{slide_index}",
+                            height=90,
+                        )
+                        new_visual = st.text_area(
+                            "Imagen / fondo ideal",
+                            value=slide_visual,
+                            key=f"slide_visual_{carousel_id}_{slide_index}",
+                            height=90,
+                        )
+                        edit_cols = st.columns([1, 1])
+                        if edit_cols[0].button("Guardar slide", key=f"save_slide_{carousel_id}_{slide_index}", type="primary"):
+                            updated = list(normalized_slides)
+                            updated[slide_index] = {
+                                **slide,
+                                "text": new_big,
+                                "microcopy": new_small,
+                                "visual": new_visual,
+                            }
+                            save_carousel_slides(carousel_id, updated)
+                            st.success("Slide actualizado.")
+                            st.rerun()
+                        if edit_cols[1].button("Eliminar slide", key=f"remove_slide_{carousel_id}_{slide_index}"):
+                            updated = [item for i, item in enumerate(normalized_slides) if i != slide_index]
+                            save_carousel_slides(carousel_id, updated)
+                            st.success("Slide eliminado.")
+                            st.rerun()
     with tab_links:
         url = st.text_input("Pega un link que te parece chévere")
         notes = st.text_area("Qué te llamó la atención", height=80)
